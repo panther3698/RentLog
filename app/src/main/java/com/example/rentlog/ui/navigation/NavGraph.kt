@@ -10,8 +10,9 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.rentlog.ui.screens.onboarding.OnboardingScreen
 import com.example.rentlog.ui.screens.dashboard.DashboardScreen
-import com.example.rentlog.ui.screens.addedit.AddEditRentScreen
+import com.example.rentlog.ui.screens.addedit.AddEditScreen
 import com.example.rentlog.ui.screens.summary.SummaryScreen
+import com.example.rentlog.ui.screens.settings.SettingsScreen
 
 @Composable
 fun NavGraph(navController: NavHostController, startDestination: String) {
@@ -37,21 +38,18 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
     ) {
         composable(
             route = Screen.Onboarding.route,
+            arguments = listOf(navArgument("isNew") { type = NavType.BoolType; defaultValue = true }),
             enterTransition = { fadeIn(animationSpec = tween(400)) },
             exitTransition = { fadeOut(animationSpec = tween(400)) }
-        ) {
+        ) { backStackEntry ->
+            val isNew = backStackEntry.arguments?.getBoolean("isNew") ?: true
             OnboardingScreen(
-                onNavigateToDashboard = {
-                    if (navController.previousBackStackEntry != null) {
-                        navController.popBackStack()
-                    } else {
+                onComplete = {
+                    if (isNew) {
                         navController.navigate(Screen.Dashboard.route) {
                             popUpTo(Screen.Onboarding.route) { inclusive = true }
                         }
-                    }
-                },
-                onBack = {
-                    if (navController.previousBackStackEntry != null) {
+                    } else {
                         navController.popBackStack()
                     }
                 }
@@ -67,21 +65,26 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
                 },
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onAddLandlord = {
+                    navController.navigate(Screen.Onboarding.createRoute(isNew = false))
                 }
             )
         }
         composable(
             route = Screen.AddEditRent.route,
-            arguments = listOf(navArgument("month") { type = NavType.IntType }),
+            arguments = listOf(navArgument("month") { type = NavType.StringType }),
             enterTransition = { 
                 slideInVertically(initialOffsetY = { it }, animationSpec = tween(400)) + fadeIn() 
             },
             exitTransition = { 
                 slideOutVertically(targetOffsetY = { it }, animationSpec = tween(400)) + fadeOut() 
             }
-        ) {
-            AddEditRentScreen(
-                onNavigateBack = {
+        ) { backStackEntry ->
+            val monthStr = backStackEntry.arguments?.getString("month") ?: "1"
+            AddEditScreen(
+                month = monthStr.toIntOrNull() ?: 1,
+                onBackClick = {
                     navController.popBackStack()
                 }
             )
@@ -94,12 +97,9 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
             )
         }
         composable(Screen.Settings.route) {
-            com.example.rentlog.ui.screens.settings.SettingsScreen(
-                onNavigateBack = {
+            SettingsScreen(
+                onBackClick = {
                     navController.popBackStack()
-                },
-                onEditProfile = {
-                    navController.navigate(Screen.Onboarding.route)
                 }
             )
         }

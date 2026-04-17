@@ -36,6 +36,11 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(17))
+        }
+    }
     buildFeatures {
         compose = true
     }
@@ -76,6 +81,13 @@ dependencies {
 
     // DataStore (for settings)
     implementation("androidx.datastore:datastore-preferences:1.1.2")
+
+    // Glance (home screen widget)
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
+
+    // Google Play In-App Review
+    implementation("com.google.android.play:review-ktx:2.0.1")
 
     // iText
     implementation(libs.itext.kernel)

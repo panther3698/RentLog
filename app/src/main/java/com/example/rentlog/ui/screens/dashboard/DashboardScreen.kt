@@ -1,15 +1,19 @@
 package com.example.rentlog.ui.screens.dashboard
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -23,37 +27,86 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.draw.alpha
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.rentlog.domain.model.Landlord
 import com.example.rentlog.domain.model.RentEntry
 import com.example.rentlog.ui.util.FiscalYearHelper
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     onMonthClick: (Int) -> Unit,
     onSummaryClick: () -> Unit,
     onSettingsClick: () -> Unit,
+    onAddLandlord: () -> Unit = {},
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val entries by viewModel.rentEntries.collectAsState()
     val fiscalStartYear by viewModel.selectedFiscalYear.collectAsState()
     val fiscalMonths = FiscalYearHelper.getFiscalMonths()
-    
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+
+    val landlords by viewModel.landlords.collectAsState()
+    val activeLandlord by viewModel.activeLandlord.collectAsState()
+
     var showYearSelector by remember { mutableStateOf(false) }
+    var showLandlordPicker by remember { mutableStateOf(false) }
+    var entryToDelete by remember { mutableStateOf<RentEntry?>(null) }
+
+    // Dynamic greeting
+    val currentHour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+    val greeting = when (currentHour) {
+        in 5..11 -> "Good Morning"
+        in 12..16 -> "Good Afternoon"
+        else -> "Good Evening"
+    }
+    
+    // Overall Progress Calculation
+    val paidCount = entries.size
+    val totalAmount = entries.sumOf { it.amount }
+
+    // Delete confirmation dialog
+    entryToDelete?.let { entry ->
+        val monthName = DateFormatSymbols().months[entry.month - 1]
+        AlertDialog(
+            onDismissRequest = { entryToDelete = null },
+            title = { Text("Delete $monthName Entry?", fontWeight = FontWeight.Bold) },
+            text = { Text("This will permanently remove the rent entry for $monthName.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deleteEntry(entry)
+                        entryToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { entryToDelete = null }) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
 
     if (showYearSelector) {
         val currentYear = FiscalYearHelper.getCurrentFiscalYear()
         val years = (currentYear - 3..currentYear + 1).toList().reversed()
-        
+
         AlertDialog(
             onDismissRequest = { showYearSelector = false },
             title = { Text("Select Financial Year", fontWeight = FontWeight.Bold) },
@@ -64,10 +117,11 @@ fun DashboardScreen(
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable {
+                                .combinedClickable(onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     viewModel.selectFiscalYear(year)
                                     showYearSelector = false
-                                },
+                                }),
                             color = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
                             shape = RoundedCornerShape(12.dp)
                         ) {
@@ -92,158 +146,252 @@ fun DashboardScreen(
             },
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = { showYearSelector = false }) {
-                    Text("Cancel")
+                TextButton(onClick = { showYearSelector = false }) { Text("Cancel") }
+            },
+            shape = RoundedCornerShape(28.dp)
+        )
+    }
+
+    if (showLandlordPicker) {
+        AlertDialog(
+            onDismissRequest = { showLandlordPicker = false },
+            title = { Text("Switch Landlord", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    landlords.forEach { landlord ->
+                        val isActive = landlord.id == activeLandlord?.id
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .combinedClickable(onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.switchLandlord(landlord.id)
+                                    showLandlordPicker = false
+                                }),
+                            color = if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else Color.Transparent,
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Surface(
+                                    modifier = Modifier.size(40.dp),
+                                    color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                                    shape = CircleShape
+                                ) {
+                                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                        Text(
+                                            landlord.name.take(1).uppercase(),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Black,
+                                            color = if (isActive) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                Spacer(Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        landlord.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                    Text(
+                                        "₹${landlord.defaultRentAmount.toInt()}/mo",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    )
+                                }
+                                if (isActive) {
+                                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Add New Landlord Option
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .combinedClickable(onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                showLandlordPicker = false
+                                onAddLandlord()
+                            }),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Surface(
+                                modifier = Modifier.size(40.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                                shape = CircleShape
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Add,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.width(16.dp))
+                            Text(
+                                "Add New Landlord",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             },
-            shape = RoundedCornerShape(28.dp),
-            containerColor = MaterialTheme.colorScheme.surface
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showLandlordPicker = false }) { 
+                    Text("Close", fontWeight = FontWeight.Bold) 
+                }
+            },
+            shape = RoundedCornerShape(28.dp)
         )
     }
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+             NavigationBar(
+                containerColor = MaterialTheme.colorScheme.surface,
+                tonalElevation = 0.dp
+            ) {
+                NavigationBarItem(
+                    selected = true,
+                    onClick = { },
+                    icon = { Icon(Icons.Default.Dashboard, contentDescription = null) },
+                    label = { Text("Dashboard") },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                        indicatorColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { onSummaryClick() },
+                    icon = { Icon(Icons.Default.History, contentDescription = null) },
+                    label = { Text("History") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { onSettingsClick() },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                    label = { Text("Settings") }
+                )
+            }
+        }
     ) { padding ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            contentPadding = PaddingValues(top = padding.calculateTopPadding() + 16.dp, bottom = 40.dp),
+                .padding(horizontal = 20.dp),
+            contentPadding = PaddingValues(top = padding.calculateTopPadding() + 20.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Header Section
             item(span = { GridItemSpan(2) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
+                Column {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    ) {
                         Text(
-                            text = "Rent Log",
-                            style = MaterialTheme.typography.displaySmall.copy(
-                                fontWeight = FontWeight.Black,
-                                letterSpacing = (-1.5).sp,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+                            text = "Rent tracking made simple",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                onClick = { showYearSelector = true },
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = FiscalYearHelper.getFiscalYearLabel(fiscalStartYear),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Icon(
-                                        Icons.Default.ArrowDropDown,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                            Spacer(Modifier.width(8.dp))
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            val tenantName = activeLandlord?.tenantName ?: "Tenant"
                             Text(
-                                text = "Financial Year",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
+                                text = "Hi, $tenantName",
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "Track your monthly rent dues.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                             )
                         }
-                    }
-                    IconButton(
-                        onClick = onSettingsClick,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier.shadow(8.dp, RoundedCornerShape(12.dp), ambientColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                        IconButton(
+                            onClick = { showLandlordPicker = true },
+                            modifier = Modifier
+                                .background(MaterialTheme.colorScheme.surface, CircleShape)
+                                .shadow(4.dp, CircleShape)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.SwapHoriz, 
+                                contentDescription = "Switch Landlord",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 }
             }
 
-            // High-End Reports CTA
+            // Total Balance Card (High Contrast)
             item(span = { GridItemSpan(2) }) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSummaryClick() }
-                        .shadow(24.dp, RoundedCornerShape(24.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        // Background Accent Gradient
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                            Color.Transparent
-                                        )
-                                    )
-                                )
-                        )
-                        
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                    Column(modifier = Modifier.padding(28.dp)) {
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.2f),
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = RoundedCornerShape(18.dp),
-                                shadowElevation = 12.dp
-                            ) {
-                                Icon(
-                                    Icons.Default.Description,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.padding(14.dp).size(28.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(20.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Tax Reports & PDFs",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Black,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    letterSpacing = (-0.5).sp
-                                )
-                                Text(
-                                    "Generate HRA receipts & logs",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
-                            }
-                            Icon(
-                                Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            Text(
+                                "Total Paid This Year",
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = "₹${String.format(Locale.getDefault(), "%,.0f", totalAmount)}",
+                            style = MaterialTheme.typography.displayMedium,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                        Text(
+                            text = "$paidCount of 12 months logged",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                        )
                     }
                 }
             }
@@ -251,11 +399,10 @@ fun DashboardScreen(
             // Grid Title
             item(span = { GridItemSpan(2) }) {
                 Text(
-                    text = "Track Payments",
-                    style = MaterialTheme.typography.titleSmall,
+                    text = "Monthly Logs",
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(top = 12.dp, start = 4.dp)
+                    modifier = Modifier.padding(top = 8.dp)
                 )
             }
 
@@ -263,142 +410,92 @@ fun DashboardScreen(
                 val entry = entries.find { it.month == month }
                 val calendarYear = FiscalYearHelper.getCalendarYearForMonth(month, fiscalStartYear)
                 
-                var isPressed by remember { mutableStateOf(false) }
-                val scale by animateFloatAsState(
-                    targetValue = if (isPressed) 0.94f else 1f,
-                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy),
-                    label = "scale"
-                )
-
-                PremiumMonthCard(
-                    modifier = Modifier
-                        .scale(scale)
-                        .clickable { onMonthClick(month) },
+                CalmMonthCard(
                     month = month,
                     year = calendarYear,
-                    entry = entry
+                    entry = entry,
+                    onClick = { onMonthClick(month) },
+                    onLongClick = { 
+                        entry?.let { 
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            entryToDelete = it 
+                        } 
+                    }
                 )
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun PremiumMonthCard(
-    modifier: Modifier = Modifier,
+fun CalmMonthCard(
     month: Int,
     year: Int,
-    entry: RentEntry?
+    entry: RentEntry?,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     val monthName = DateFormatSymbols().months[month - 1]
     val isPaid = entry != null
     
-    // Vibrant Professional Colors
-    val statusColor = if (isPaid) Color(0xFF4CAF50) else MaterialTheme.colorScheme.primary
-    val cardBg = if (isPaid) statusColor.copy(alpha = 0.04f) else MaterialTheme.colorScheme.surface
-
     Card(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .height(185.dp)
-            .shadow(
-                elevation = if (isPaid) 16.dp else 4.dp,
-                shape = RoundedCornerShape(32.dp),
-                spotColor = statusColor.copy(alpha = 0.3f)
+            .height(145.dp) // Slightly taller
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
             ),
-        shape = RoundedCornerShape(32.dp),
-        colors = CardDefaults.cardColors(containerColor = cardBg),
-        border = BorderStroke(
-            1.5.dp, 
-            if (isPaid) statusColor.copy(alpha = 0.25f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-        )
+        shape = RoundedCornerShape(32.dp), // More rounded
+        colors = CardDefaults.cardColors(
+            containerColor = if (isPaid) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 16.dp, // Maximum lift
+            pressedElevation = 2.dp
+        ),
+        border = BorderStroke(1.8.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.95f))
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(22.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
+        Column(
+            modifier = Modifier.padding(24.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = monthName,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isPaid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+            )
+            
+            if (isPaid && entry != null) {
                 Column {
                     Text(
-                        text = monthName,
-                        style = MaterialTheme.typography.headlineSmall,
+                        text = "₹${String.format(Locale.getDefault(), "%,.0f", entry.amount)}",
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        letterSpacing = (-0.5).sp
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = entry.paymentMode,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
-
-                if (isPaid) {
-                    Column {
-                        Text(
-                            text = "₹${entry.amount.toInt()}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Black,
-                            color = statusColor,
-                            fontSize = 22.sp
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .background(statusColor, CircleShape)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "PAID ON ${SimpleDateFormat("dd MMM yy", Locale.getDefault()).format(Date(entry.paymentDate))}",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = statusColor.copy(alpha = 0.7f),
-                                letterSpacing = 0.5.sp
-                            )
-                        }
-                    }
-                } else {
-                    // Empty state indicator
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
-                            .padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+            } else {
+                Surface(
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Icon(
                             Icons.Default.Add, 
                             contentDescription = null, 
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(24.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "LOG RENT", 
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = FontWeight.Black,
-                            color = MaterialTheme.colorScheme.primary
-                        )
                     }
-                }
-            }
-
-            // High-visibility checkmark
-            if (isPaid) {
-                Surface(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .size(32.dp),
-                    color = statusColor,
-                    shape = CircleShape,
-                    shadowElevation = 8.dp
-                ) {
-                    Icon(
-                        Icons.Default.Check,
-                        contentDescription = null,
-                        modifier = Modifier.padding(8.dp),
-                        tint = Color.White
-                    )
                 }
             }
         }

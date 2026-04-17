@@ -11,6 +11,9 @@ class RentEntryRepositoryImpl @Inject constructor(
 ) : RentEntryRepository {
     override fun getEntriesForYear(year: Int): Flow<List<RentEntry>> = dao.getEntriesForYear(year)
     
+    override fun getEntriesForYearAndLandlord(year: Int, landlordId: Int): Flow<List<RentEntry>> =
+        dao.getEntriesForYearAndLandlord(year, landlordId)
+    
     override fun getYearlyTotal(year: Int): Flow<Double?> = dao.getYearlyTotal(year)
     
     override fun getEntriesForLandlord(landlordId: Int): Flow<List<RentEntry>> = 

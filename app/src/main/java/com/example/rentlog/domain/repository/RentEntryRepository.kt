@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface RentEntryRepository {
     fun getEntriesForYear(year: Int): Flow<List<RentEntry>>
+    fun getEntriesForYearAndLandlord(year: Int, landlordId: Int): Flow<List<RentEntry>>
     fun getYearlyTotal(year: Int): Flow<Double?>
     fun getEntriesForLandlord(landlordId: Int): Flow<List<RentEntry>>
     suspend fun insertOrUpdateRentEntry(entry: RentEntry): Long

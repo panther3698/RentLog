@@ -5,7 +5,6 @@ import androidx.room.Room
 import com.example.rentlog.data.local.AppDatabase
 import com.example.rentlog.data.local.LandlordDao
 import com.example.rentlog.data.local.RentEntryDao
-import com.example.rentlog.data.local.RentLogDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,21 +23,14 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "rent_log_db"
-        ).fallbackToDestructiveMigration().build()
+        ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
-    fun provideRentLogDao(db: AppDatabase): RentLogDao {
-        return db.rentLogDao()
-    }
+    fun provideLandlordDao(db: AppDatabase): LandlordDao = db.landlordDao()
 
     @Provides
-    fun provideLandlordDao(db: AppDatabase): LandlordDao {
-        return db.landlordDao()
-    }
-
-    @Provides
-    fun provideRentEntryDao(db: AppDatabase): RentEntryDao {
-        return db.rentEntryDao()
-    }
+    fun provideRentEntryDao(db: AppDatabase): RentEntryDao = db.rentEntryDao()
 }

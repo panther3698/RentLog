@@ -11,35 +11,39 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryGold,
-    secondary = SecondaryGold,
-    tertiary = SecondaryGold,
-    background = DarkGray,
-    surface = SurfaceColor,
+    primary = CalmDarkPrimary,
+    secondary = CalmDarkSecondary,
+    tertiary = CalmDarkPrimary,
+    background = CalmDarkBackground,
+    surface = CalmDarkSurface,
     onPrimary = Color.Black,
-    onSecondary = Color.Black,
+    onSecondary = Color.White,
     onTertiary = Color.Black,
-    onBackground = TextPrimary,
-    onSurface = TextPrimary,
-    primaryContainer = AccentColor,
-    onPrimaryContainer = PrimaryGold,
-    outline = Color(0xFF333333)
+    onBackground = CalmDarkTextPrimary,
+    onSurface = CalmDarkTextPrimary,
+    primaryContainer = CalmDarkSecondary,
+    onPrimaryContainer = Color.White,
+    surfaceVariant = CalmDarkSurface,
+    onSurfaceVariant = CalmDarkTextSecondary,
+    outline = Color(0xFF1B2623)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = LightPrimary,
-    secondary = LightSecondary,
-    tertiary = LightSecondary,
-    background = LightBackground,
-    surface = LightSurface,
+    primary = CalmPrimary,
+    secondary = CalmSecondary,
+    tertiary = CalmPrimary,
+    background = CalmBackground,
+    surface = CalmSurface,
     onPrimary = Color.White,
-    onSecondary = Color.White,
+    onSecondary = CalmPrimary,
     onTertiary = Color.White,
-    onBackground = LightTextPrimary,
-    onSurface = LightTextPrimary,
-    primaryContainer = LightGoldBackground,
-    onPrimaryContainer = LightPrimary,
-    outline = Color(0xFFE5E5E5)
+    onBackground = CalmTextPrimary,
+    onSurface = CalmTextPrimary,
+    primaryContainer = CalmPrimary,
+    onPrimaryContainer = Color.White,
+    surfaceVariant = CalmAccent,
+    onSurfaceVariant = CalmTextSecondary,
+    outline = CalmOutline
 )
 
 @Composable

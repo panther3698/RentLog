@@ -25,5 +25,6 @@ data class RentEntry(
     val amount: Double,
     val paymentDate: Long,
     val transactionId: String,
-    val landlordId: Int
+    val landlordId: Int,
+    val paymentMode: String = "UPI"
 )

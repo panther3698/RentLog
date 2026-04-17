@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget night colors -->
+    <color name="widget_bg">#FF161616</color>
+    <color name="widget_primary">#FFFFD700</color>
+    <color name="widget_text">#FFE0E0E0</color>
+    <color name="widget_subtext">#FFB0B0B0</color>
+    <color name="widget_green">#FF66BB6A</color>
+    <color name="widget_card">#FF1E1E1E</color>
+    <color name="widget_orange">#FFFF9800</color>
+</resources>

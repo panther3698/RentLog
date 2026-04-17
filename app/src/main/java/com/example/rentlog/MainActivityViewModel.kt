@@ -28,6 +28,7 @@ class MainActivityViewModel @Inject constructor(
 
     private fun determineStartDestination() {
         viewModelScope.launch {
+            kotlinx.coroutines.delay(1500) // Minimum splash screen time for branding
             try {
                 val landlords = repository.getAllLandlords().first()
                 if (landlords.isEmpty()) {

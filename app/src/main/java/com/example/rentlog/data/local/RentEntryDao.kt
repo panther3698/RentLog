@@ -12,11 +12,17 @@ interface RentEntryDao {
     @Query("SELECT * FROM rent_entries WHERE year = :year ORDER BY month ASC")
     fun getEntriesForYear(year: Int): Flow<List<RentEntry>>
 
+    @Query("SELECT * FROM rent_entries WHERE year = :year AND landlordId = :landlordId ORDER BY month ASC")
+    fun getEntriesForYearAndLandlord(year: Int, landlordId: Int): Flow<List<RentEntry>>
+
     @Query("SELECT SUM(amount) FROM rent_entries WHERE year = :year")
     fun getYearlyTotal(year: Int): Flow<Double?>
 
     @Query("SELECT * FROM rent_entries WHERE landlordId = :landlordId")
     fun getEntriesForLandlord(landlordId: Int): Flow<List<RentEntry>>
+
+    @Query("SELECT * FROM rent_entries WHERE year = :year ORDER BY month ASC")
+    fun getEntriesForYearSync(year: Int): List<RentEntry>
 
     @Delete
     suspend fun deleteRentEntry(entry: RentEntry)

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">RentLog</string>
+    <string name="widget_label">RentLog Quick View</string>
+    <string name="widget_description">View current month rent status at a glance</string>
 </resources>

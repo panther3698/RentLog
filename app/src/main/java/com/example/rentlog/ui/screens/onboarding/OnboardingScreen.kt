@@ -1,240 +1,185 @@
 package com.example.rentlog.ui.screens.onboarding
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material.icons.filled.Badge
-import androidx.compose.material.icons.filled.CurrencyRupee
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ReceiptLong
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.rentlog.R
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
-    onNavigateToDashboard: () -> Unit,
-    onBack: (() -> Unit)? = null,
+    onComplete: () -> Unit,
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
-    var name by remember { mutableStateOf("") }
-    var tenantName by remember { mutableStateOf("") }
-    var tenantAddress by remember { mutableStateOf("") }
-    var landlordAddress by remember { mutableStateOf("") }
-    var pan by remember { mutableStateOf("") }
-    var rent by remember { mutableStateOf("") }
-
-    val landlord by viewModel.landlord.collectAsState(initial = null)
-    val isEditMode = landlord != null
-
-    LaunchedEffect(landlord) {
-        landlord?.let {
-            name = it.name
-            tenantName = it.tenantName
-            tenantAddress = it.tenantAddress
-            landlordAddress = it.landlordAddress
-            pan = it.panNumber
-            rent = it.defaultRentAmount.let { r -> if (r == 0.0) "" else r.toString() }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.onboardingCompleted.collect {
-            onNavigateToDashboard()
-        }
-    }
-
+    val state by viewModel.state.collectAsState()
     val scrollState = rememberScrollState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        // Decorative background element
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(300.dp)
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
-
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        bottomBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                tonalElevation = 8.dp,
+                shadowElevation = 16.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Button(
+                    onClick = { viewModel.saveLandlord(onComplete) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
+                        .height(64.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("Get Started", fontSize = 18.sp, fontWeight = FontWeight.Black)
+                }
+            }
+        }
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .statusBarsPadding()
-                .navigationBarsPadding()
-                .padding(horizontal = 32.dp),
+                .padding(padding)
+                .verticalScroll(scrollState)
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(if (isEditMode) 40.dp else 60.dp))
-            
-            // Fixed Header: Premium Logo/Icon
-            Surface(
+            // Header Logo (Matching Splash)
+            Box(
                 modifier = Modifier
-                    .size(90.dp)
-                    .shadow(20.dp, RoundedCornerShape(28.dp), spotColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.primary
+                    .size(140.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFF1A1A1A)),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.ReceiptLong,
+                Image(
+                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
                     contentDescription = null,
-                    modifier = Modifier.padding(24.dp).fillMaxSize(),
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    modifier = Modifier.size(70.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(Modifier.height(32.dp))
 
             Text(
-                text = "Rent Log",
-                style = MaterialTheme.typography.displaySmall.copy(
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = (-1.5).sp
-                ),
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            
-            Text(
-                text = "PROFESSIONAL TRACKING",
-                style = MaterialTheme.typography.labelLarge.copy(
-                    letterSpacing = 3.sp,
-                    fontWeight = FontWeight.Bold
-                ),
+                "Welcome to RentLog",
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary
             )
+            Text(
+                "Setup your landlord profile to begin",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(Modifier.height(40.dp))
 
-            // Scrollable Form Area
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(32.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(24.dp)) {
-                        Text("Identity Details", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        OnboardingField("Landlord Name", name, { name = it }, Icons.Default.Person)
-                        OnboardingField("Your Name (Tenant)", tenantName, { tenantName = it }, Icons.Default.Badge)
-                        OnboardingField("Landlord PAN Number", pan, { pan = it.uppercase() }, Icons.Default.AccountBalanceWallet)
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Address Details", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        OnboardingField("Property Address (Tenant)", tenantAddress, { tenantAddress = it }, Icons.Default.Home)
-                        OnboardingField("Landlord Address", landlordAddress, { landlordAddress = it }, Icons.Default.LocationOn)
-                        
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Text("Rent Details", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        OnboardingField("Default Monthly Rent", rent, { rent = it }, Icons.Default.ReceiptLong, KeyboardType.Number)
-                    }
-                }
-                Spacer(modifier = Modifier.height(24.dp))
-            }
-
-            // Fixed Footer Button
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = { 
-                    if (name.isNotBlank() && pan.isNotBlank() && tenantName.isNotBlank()) {
-                        viewModel.saveLandlord(
-                            name = name, 
-                            tenantName = tenantName, 
-                            tenantAddress = tenantAddress,
-                            landlordAddress = landlordAddress,
-                            pan = pan, 
-                            defaultRent = rent.toDoubleOrNull() ?: 0.0
-                        )
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .shadow(16.dp, RoundedCornerShape(20.dp), spotColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text(
-                    if (landlord == null) "GET STARTED" else "SAVE CHANGES", 
-                    fontSize = 16.sp, 
-                    fontWeight = FontWeight.ExtraBold, 
-                    letterSpacing = 2.sp
+            // Form Fields in Calm Cards
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OnboardingField(
+                    icon = Icons.Default.Person,
+                    label = "Landlord Name",
+                    value = state.name,
+                    onValueChange = { viewModel.onNameChange(it) }
+                )
+                OnboardingField(
+                    icon = Icons.Default.Home,
+                    label = "Tenant Name",
+                    value = state.tenantName,
+                    onValueChange = { viewModel.onTenantNameChange(it) }
+                )
+                OnboardingField(
+                    icon = Icons.Default.Place,
+                    label = "Tenant Address",
+                    value = state.tenantAddress,
+                    onValueChange = { viewModel.onTenantAddressChange(it) }
+                )
+                OnboardingField(
+                    icon = Icons.Default.Business,
+                    label = "Landlord Address",
+                    value = state.landlordAddress,
+                    onValueChange = { viewModel.onLandlordAddressChange(it) }
+                )
+                OnboardingField(
+                    icon = Icons.Default.CurrencyRupee,
+                    label = "Monthly Rent Amount",
+                    value = state.defaultRentAmount,
+                    onValueChange = { viewModel.onRentAmountChange(it) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                OnboardingField(
+                    icon = Icons.Default.Assignment,
+                    label = "Landlord PAN (Optional)",
+                    value = state.panNumber,
+                    onValueChange = { viewModel.onPanChange(it) }
                 )
             }
-            Spacer(modifier = Modifier.height(24.dp))
-        }
-
-        if (isEditMode && onBack != null) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(16.dp)
-                    .shadow(8.dp, RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.primary)
-            }
+            
+            Spacer(Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
 fun OnboardingField(
+    icon: ImageVector,
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    icon: ImageVector,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        leadingIcon = { Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-        shape = RoundedCornerShape(16.dp),
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        singleLine = true,
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surface
-        )
-    )
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(20.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
+                TextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    placeholder = { Text("Enter $label") },
+                    keyboardOptions = keyboardOptions,
+                    singleLine = true
+                )
+            }
+        }
+    }
 }

@@ -1,7 +1,9 @@
 package com.example.rentlog.ui.navigation
 
 sealed class Screen(val route: String) {
-    object Onboarding : Screen("onboarding")
+    object Onboarding : Screen("onboarding?isNew={isNew}") {
+        fun createRoute(isNew: Boolean = true) = "onboarding?isNew=$isNew"
+    }
     object Dashboard : Screen("dashboard")
     object AddEditRent : Screen("add_edit_rent/{month}") {
         fun createRoute(month: Int) = "add_edit_rent/$month"
