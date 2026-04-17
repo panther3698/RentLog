@@ -1,227 +1,402 @@
 package com.example.rentlog.ui.screens.settings
 
-import androidx.compose.foundation.background
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.rentlog.ui.theme.Elevation
+import com.example.rentlog.ui.theme.Radius
+import com.example.rentlog.ui.theme.Spacing
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onBackClick: () -> Unit,
+    onNavigateBack: () -> Unit,
+    onEditProfile: () -> Unit,
+    onGoPremium: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
-    val isBiometricEnabled by viewModel.isBiometricEnabled.collectAsState(initial = false)
-    val themeMode by viewModel.themeMode.collectAsState(initial = "SYSTEM")
+    val themeMode by viewModel.themeMode.collectAsState()
+    val isBiometricEnabled by viewModel.isBiometricEnabled.collectAsState()
+    val isReminderEnabled by viewModel.isReminderEnabled.collectAsState()
+    val context = LocalContext.current
+
+    var showAboutDialog by remember { mutableStateOf(false) }
+    var showPrivacyDialog by remember { mutableStateOf(false) }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = { Text("About RentLog", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    Text(
+                        "Version 1.0.0 — Premium Edition",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "RentLog helps Indian tenants track monthly rent payments and generate HRA receipts for income tax filing — fully offline, no account needed.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        lineHeight = 18.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) { Text("Close") }
+            },
+            shape = Radius.xl,
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    if (showPrivacyDialog) {
+        AlertDialog(
+            onDismissRequest = { showPrivacyDialog = false },
+            title = { Text("Privacy Policy", fontWeight = FontWeight.Bold) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                    Text(
+                        "Your data never leaves your device.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "RentLog stores all information — tenant names, addresses, PAN, and payment history — locally on your device. No data is sent to any server, cloud, or third party.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        lineHeight = 18.sp
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPrivacyDialog = false }) { Text("Got it") }
+            },
+            shape = Radius.xl,
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
+
+    val filePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            Toast.makeText(context, "Backup import requires file permission handling", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Bold) },
+                title = {
+                    Text(
+                        "Settings",
+                        fontWeight = FontWeight.Black,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    IconButton(
+                        onClick = onNavigateBack,
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier
+                            .padding(start = Spacing.sm)
+                            .size(40.dp)
+                            .shadow(Elevation.low, Radius.md)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
                 )
             )
-        },
-        containerColor = MaterialTheme.colorScheme.background
+        }
     ) { padding ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(horizontal = Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            contentPadding = PaddingValues(bottom = Spacing.xl)
         ) {
-            // Hero Section (Matching reference)
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(32.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.8.dp, MaterialTheme.colorScheme.outline)
-            ) {
-                Column(modifier = Modifier.padding(28.dp)) {
-                    Text(
-                        "Private, simple, and under your control",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        lineHeight = 28.sp
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        "Manage appearance, reminders, privacy, and local data from one calm place.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            // Go Premium banner
+            item {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onGoPremium() }
+                        .shadow(
+                            Elevation.premium,
+                            Radius.xxl,
+                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        ),
+                    shape = Radius.xxl,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Spacing.lg),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.WorkspacePremium,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(32.dp)
+                        )
+                        Spacer(Modifier.width(Spacing.md))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Unlock Premium",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Black,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Text(
+                                "PDFs, HRA calculator, attachments & more — ₹199 once",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                            )
+                        }
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                        )
+                    }
+                }
+            }
+
+            item { Spacer(Modifier.height(Spacing.xs)) }
+
+            item { SettingsHeader("Profile") }
+            item {
+                PremiumSettingsCard {
+                    SettingsClickableItem(
+                        title = "Landlord & Tenant Details",
+                        subtitle = "Edit tenant info, PAN, and rent amount",
+                        icon = Icons.Default.Person,
+                        onClick = onEditProfile
                     )
                 }
             }
 
-            SettingsSection(title = "Preferences") {
-                SettingsSwitchItem(
-                    icon = Icons.Default.Brightness4,
-                    title = "Dark Mode",
-                    subtitle = "Toggle dark theme for the app",
-                    checked = themeMode == "DARK",
-                    onCheckedChange = { viewModel.setThemeMode(if (it) "DARK" else "LIGHT") }
-                )
-                SettingsSwitchItem(
-                    icon = Icons.Default.Notifications,
-                    title = "Reminders",
-                    subtitle = "Get notified about due transactions",
-                    checked = true,
-                    onCheckedChange = { }
-                )
-                SettingsSwitchItem(
-                    icon = Icons.Default.Lock,
-                    title = "App Lock",
-                    subtitle = "Require biometric or device unlock",
-                    checked = isBiometricEnabled,
-                    onCheckedChange = { viewModel.setBiometricEnabled(it) }
-                )
+            item { SettingsHeader("Appearance") }
+            item {
+                PremiumSettingsCard {
+                    SettingsClickableItem(
+                        title = "Theme Mode",
+                        subtitle = themeMode,
+                        icon = Icons.Default.Palette,
+                        onClick = {
+                            val nextMode = when (themeMode) {
+                                "SYSTEM" -> "LIGHT"
+                                "LIGHT" -> "DARK"
+                                else -> "SYSTEM"
+                            }
+                            viewModel.setThemeMode(nextMode)
+                        }
+                    )
+                }
             }
 
-            SettingsSection(title = "Data") {
-                SettingsActionItem(
-                    icon = Icons.Default.Description,
-                    title = "Export Statements",
-                    subtitle = "Generate PDF reports for all logs"
-                )
-                SettingsActionItem(
-                    icon = Icons.Default.CloudUpload,
-                    title = "Export Backup",
-                    subtitle = "Save a restorable copy of your local data"
-                )
-                SettingsActionItem(
-                    icon = Icons.Default.Restore,
-                    title = "Restore Backup",
-                    subtitle = "Import a backup file and restart the app"
-                )
+            item { SettingsHeader("Security & Reminders") }
+            item {
+                PremiumSettingsCard {
+                    Column {
+                        SettingsSwitchItem(
+                            title = "Biometric Lock",
+                            subtitle = "Lock app with fingerprint or face",
+                            icon = Icons.Default.Fingerprint,
+                            checked = isBiometricEnabled,
+                            onCheckedChange = { viewModel.setBiometricEnabled(it) }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = Spacing.md),
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
+                        SettingsSwitchItem(
+                            title = "Monthly Reminders",
+                            subtitle = "Notify on the 1st of every month",
+                            icon = Icons.Default.NotificationsActive,
+                            checked = isReminderEnabled,
+                            onCheckedChange = { viewModel.setReminderEnabled(it) }
+                        )
+                    }
+                }
             }
-            
-            Spacer(Modifier.height(40.dp))
+
+            item { SettingsHeader("Data Management") }
+            item {
+                PremiumSettingsCard {
+                    Column {
+                        SettingsClickableItem(
+                            title = "Export Backup",
+                            subtitle = "Save a backup to your device",
+                            icon = Icons.Default.CloudUpload,
+                            onClick = {
+                                viewModel.exportBackup { success, message ->
+                                    Toast.makeText(
+                                        context,
+                                        if (success) "Backup saved successfully" else "Error: $message",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = Spacing.md),
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
+                        SettingsClickableItem(
+                            title = "Import Backup",
+                            subtitle = "Restore from a backup file",
+                            icon = Icons.Default.CloudDownload,
+                            onClick = { filePickerLauncher.launch("*/*") }
+                        )
+                    }
+                }
+            }
+
+            item { SettingsHeader("Support") }
+            item {
+                PremiumSettingsCard {
+                    Column {
+                        SettingsClickableItem(
+                            title = "About RentLog",
+                            subtitle = "v1.0.0 — Premium Edition",
+                            icon = Icons.Default.Verified,
+                            onClick = { showAboutDialog = true }
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = Spacing.md),
+                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        )
+                        SettingsClickableItem(
+                            title = "Privacy Policy",
+                            subtitle = "All data stays on your device",
+                            icon = Icons.Default.Security,
+                            onClick = { showPrivacyDialog = true }
+                        )
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 4.dp)
+fun PremiumSettingsCard(content: @Composable () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                Elevation.medium,
+                Radius.xl,
+                spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            ),
+        shape = Radius.xl,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+        content = { content() }
+    )
+}
+
+@Composable
+fun SettingsHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(
+            start = Spacing.md,
+            top = Spacing.lg,
+            bottom = Spacing.sm
         )
-        content()
-    }
+    )
+}
+
+@Composable
+fun SettingsClickableItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    ListItem(
+        headlineContent = { Text(title, fontWeight = FontWeight.Medium) },
+        supportingContent = {
+            Text(subtitle, style = MaterialTheme.typography.bodySmall)
+        },
+        leadingContent = {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        },
+        trailingContent = {
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+            )
+        },
+        modifier = Modifier.clickable { onClick() }
+    )
 }
 
 @Composable
 fun SettingsSwitchItem(
-    icon: ImageVector,
     title: String,
     subtitle: String,
+    icon: ImageVector,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(28.dp),
-        shadowElevation = 8.dp,
-        border = androidx.compose.foundation.BorderStroke(1.8.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                shape = CircleShape,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-            }
+    ListItem(
+        headlineContent = { Text(title, fontWeight = FontWeight.Medium) },
+        supportingContent = {
+            Text(subtitle, style = MaterialTheme.typography.bodySmall)
+        },
+        leadingContent = {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        },
+        trailingContent = {
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = MaterialTheme.colorScheme.primary,
-                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
-    }
-}
-
-@Composable
-fun SettingsActionItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit = {}
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(28.dp),
-        shadowElevation = 8.dp,
-        border = androidx.compose.foundation.BorderStroke(1.8.dp, MaterialTheme.colorScheme.outline),
-        modifier = Modifier.fillMaxWidth().clickable { onClick() }
-    ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                shape = CircleShape,
-                modifier = Modifier.size(44.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                }
-            }
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
-                Text(subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
-            }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-        }
-    }
+    )
 }

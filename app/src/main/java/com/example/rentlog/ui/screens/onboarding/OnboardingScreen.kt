@@ -1,185 +1,256 @@
 package com.example.rentlog.ui.screens.onboarding
 
-import androidx.compose.animation.*
-import androidx.compose.foundation.Image
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.rentlog.R
+import com.example.rentlog.ui.components.FormField
+import com.example.rentlog.ui.components.PrimaryButton
+import com.example.rentlog.ui.theme.Elevation
+import com.example.rentlog.ui.theme.Radius
+import com.example.rentlog.ui.theme.Spacing
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OnboardingScreen(
-    onComplete: () -> Unit,
+    onNavigateToDashboard: () -> Unit,
+    onBack: (() -> Unit)? = null,
     viewModel: OnboardingViewModel = hiltViewModel()
 ) {
-    val state by viewModel.state.collectAsState()
-    val scrollState = rememberScrollState()
+    var name by remember { mutableStateOf("") }
+    var tenantName by remember { mutableStateOf("") }
+    var tenantAddress by remember { mutableStateOf("") }
+    var landlordAddress by remember { mutableStateOf("") }
+    var pan by remember { mutableStateOf("") }
+    var rent by remember { mutableStateOf("") }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                tonalElevation = 8.dp,
-                shadowElevation = 16.dp,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                Button(
-                    onClick = { viewModel.saveLandlord(onComplete) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp)
-                        .height(64.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("Get Started", fontSize = 18.sp, fontWeight = FontWeight.Black)
-                }
-            }
+    // Validation error flags — shown only after first submit attempt
+    var attempted by remember { mutableStateOf(false) }
+
+    val landlord by viewModel.landlord.collectAsState(initial = null)
+    val isSaving by viewModel.isSaving.collectAsState()
+    val isEditMode = landlord != null
+
+    LaunchedEffect(landlord) {
+        landlord?.let {
+            name = it.name
+            tenantName = it.tenantName
+            tenantAddress = it.tenantAddress
+            landlordAddress = it.landlordAddress
+            pan = it.panNumber
+            rent = it.defaultRentAmount.let { r -> if (r == 0.0) "" else r.toString() }
         }
-    ) { padding ->
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.onboardingCompleted.collect { onNavigateToDashboard() }
+    }
+
+    val panRegex = remember { Regex("[A-Z]{5}[0-9]{4}[A-Z]") }
+    val isPanValid = pan.length == 10 && panRegex.matches(pan)
+
+    val nameError = attempted && name.isBlank()
+    val tenantError = attempted && tenantName.isBlank()
+    val panError = attempted && !isPanValid
+    val isFormValid = name.isNotBlank() && tenantName.isNotBlank() && isPanValid
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(Spacing.xxxl * 4)
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(scrollState)
-                .padding(24.dp),
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = Spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Header Logo (Matching Splash)
-            Box(
+            Spacer(modifier = Modifier.height(if (isEditMode) Spacing.xxl else Spacing.xxxl - Spacing.md))
+
+            // Logo
+            Surface(
                 modifier = Modifier
-                    .size(140.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1A1A1A)),
-                contentAlignment = Alignment.Center
+                    .size(90.dp)
+                    .shadow(Elevation.premium, Radius.xxl, spotColor = MaterialTheme.colorScheme.primary),
+                shape = Radius.xxl,
+                color = MaterialTheme.colorScheme.primary
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                Icon(
+                    Icons.Default.ReceiptLong,
                     contentDescription = null,
-                    modifier = Modifier.size(70.dp)
+                    modifier = Modifier
+                        .padding(Spacing.lg)
+                        .fillMaxSize(),
+                    tint = MaterialTheme.colorScheme.onPrimary
                 )
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(Spacing.lg))
 
             Text(
-                "Welcome to RentLog",
+                text = "Rent Log",
                 style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            Text(
+                text = "HRA RECEIPT TRACKER",
+                style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 3.sp),
                 color = MaterialTheme.colorScheme.primary
             )
-            Text(
-                "Setup your landlord profile to begin",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+
+            Spacer(modifier = Modifier.height(Spacing.xl))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = Radius.xxl,
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = Elevation.low)
+                ) {
+                    Column(modifier = Modifier.padding(Spacing.lg)) {
+                        SectionLabel("Identity Details")
+                        FormField(
+                            label = "Landlord Name",
+                            value = name,
+                            onValueChange = { name = it },
+                            icon = Icons.Default.Person,
+                            isError = nameError,
+                            errorMessage = if (nameError) "Landlord name is required" else null
+                        )
+                        FormField(
+                            label = "Tenant Name",
+                            value = tenantName,
+                            onValueChange = { tenantName = it },
+                            icon = Icons.Default.Badge,
+                            isError = tenantError,
+                            errorMessage = if (tenantError) "Tenant name is required" else null
+                        )
+                        FormField(
+                            label = "Landlord PAN",
+                            value = pan,
+                            onValueChange = { pan = it.uppercase() },
+                            icon = Icons.Default.AccountBalanceWallet,
+                            hint = "e.g. ABCDE1234F",
+                            isError = panError,
+                            errorMessage = if (panError) {
+                                if (pan.isBlank()) "PAN number is required"
+                                else "Invalid PAN — must be 5 letters, 4 digits, 1 letter (e.g. ABCDE1234F)"
+                            } else null
+                        )
+
+                        Spacer(modifier = Modifier.height(Spacing.md))
+                        SectionLabel("Address Details")
+                        FormField(
+                            label = "Rental Property Address",
+                            value = tenantAddress,
+                            onValueChange = { tenantAddress = it },
+                            icon = Icons.Default.Home
+                        )
+                        FormField(
+                            label = "Landlord Address",
+                            value = landlordAddress,
+                            onValueChange = { landlordAddress = it },
+                            icon = Icons.Default.LocationOn
+                        )
+
+                        Spacer(modifier = Modifier.height(Spacing.md))
+                        SectionLabel("Rent Details")
+                        FormField(
+                            label = "Monthly Rent Amount",
+                            value = rent,
+                            onValueChange = { rent = it },
+                            icon = Icons.Default.ReceiptLong,
+                            keyboardType = KeyboardType.Number
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(Spacing.lg))
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+            PrimaryButton(
+                text = if (landlord == null) "GET STARTED" else "SAVE CHANGES",
+                onClick = {
+                    attempted = true
+                    if (isFormValid) {
+                        viewModel.saveLandlord(
+                            name = name,
+                            tenantName = tenantName,
+                            tenantAddress = tenantAddress,
+                            landlordAddress = landlordAddress,
+                            pan = pan,
+                            defaultRent = rent.toDoubleOrNull() ?: 0.0
+                        )
+                    }
+                },
+                enabled = true,
+                isLoading = isSaving
             )
+            Spacer(modifier = Modifier.height(Spacing.lg))
+        }
 
-            Spacer(Modifier.height(40.dp))
-
-            // Form Fields in Calm Cards
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OnboardingField(
-                    icon = Icons.Default.Person,
-                    label = "Landlord Name",
-                    value = state.name,
-                    onValueChange = { viewModel.onNameChange(it) }
-                )
-                OnboardingField(
-                    icon = Icons.Default.Home,
-                    label = "Tenant Name",
-                    value = state.tenantName,
-                    onValueChange = { viewModel.onTenantNameChange(it) }
-                )
-                OnboardingField(
-                    icon = Icons.Default.Place,
-                    label = "Tenant Address",
-                    value = state.tenantAddress,
-                    onValueChange = { viewModel.onTenantAddressChange(it) }
-                )
-                OnboardingField(
-                    icon = Icons.Default.Business,
-                    label = "Landlord Address",
-                    value = state.landlordAddress,
-                    onValueChange = { viewModel.onLandlordAddressChange(it) }
-                )
-                OnboardingField(
-                    icon = Icons.Default.CurrencyRupee,
-                    label = "Monthly Rent Amount",
-                    value = state.defaultRentAmount,
-                    onValueChange = { viewModel.onRentAmountChange(it) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-                OnboardingField(
-                    icon = Icons.Default.Assignment,
-                    label = "Landlord PAN (Optional)",
-                    value = state.panNumber,
-                    onValueChange = { viewModel.onPanChange(it) }
+        if (isEditMode && onBack != null) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(Spacing.md)
+                    .shadow(Elevation.medium, Radius.md)
+                    .background(MaterialTheme.colorScheme.surface, Radius.md)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
-            
-            Spacer(Modifier.height(40.dp))
         }
     }
 }
 
 @Composable
-fun OnboardingField(
-    icon: ImageVector,
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
-) {
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(20.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-            Spacer(Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
-                TextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent
-                    ),
-                    placeholder = { Text("Enter $label") },
-                    keyboardOptions = keyboardOptions,
-                    singleLine = true
-                )
-            }
-        }
-    }
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(bottom = Spacing.xs)
+    )
 }

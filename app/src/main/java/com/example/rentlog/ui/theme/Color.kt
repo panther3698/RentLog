@@ -2,24 +2,28 @@ package com.example.rentlog.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Calm & Clean Palette (Light Mode)
-val CalmBackground = Color(0xFFD4E2DD) // Deeper background for maximum card pop
-val CalmSurface = Color(0xFFFFFFFF)
-val CalmPrimary = Color(0xFF2D6A4F) // Deep Calm Green
-val CalmSecondary = Color(0xFFD8E8E2) // Soft Mint
-val CalmAccent = Color(0xFFE1EDEA)
-val CalmTextPrimary = Color(0xFF1B2D2A)
-val CalmTextSecondary = Color(0xFF5A716E)
-val CalmOutline = Color(0xFF8BA39D) // Even sharper, more visible outline
+// Dark Palette — Deep Obsidian & Premium Gold
+val DarkGray = Color(0xFF080808)          // Near-black, richer than pure black
+val SurfaceColor = Color(0xFF131313)      // Slightly lifted surface
+val SurfaceVariant = Color(0xFF1C1C1C)    // Card headers, elevated elements
+val PrimaryGold = Color(0xFFFFCC00)       // Warmer, richer gold (more premium than pure yellow)
+val SecondaryGold = Color(0xFFD4A017)     // Deep gold for secondary accents
+val TextPrimary = Color(0xFFEEEEEE)       // Softer than pure white — easier on eyes
+val TextSecondary = Color(0xFFAAAAAA)     // Muted secondary text
+val AccentColor = Color(0xFF242424)       // Used for primaryContainer
+val ErrorRed = Color(0xFFE57373)          // Slightly softer red for better readability
+val SuccessGreen = Color(0xFF4CAF50)      // Paid / confirmed state
+val SuccessGreenContainer = Color(0xFF1B3A1F) // Dark surface for success containers
+val OnSuccessGreen = Color(0xFFFFFFFF)    // Text/icons on SuccessGreen
 
-// Calm & Clean Palette (Dark Mode - matching reference)
-val CalmDarkBackground = Color(0xFF0A0F0D)
-val CalmDarkSurface = Color(0xFF131B19)
-val CalmDarkPrimary = Color(0xFF52B788) // Mint Green
-val CalmDarkSecondary = Color(0xFF1B4332) // Forest Green (Card)
-val CalmDarkTextPrimary = Color(0xFFFFFFFF)
-val CalmDarkTextSecondary = Color(0xFF8B9A96)
-
-// Legacy / Other
-val ErrorRed = Color(0xFFFF5252)
-val SuccessGreen = Color(0xFF2D6A4F)
+// Light Palette — Warm Ivory & Champagne Gold
+val LightBackground = Color(0xFFF8F7F4)  // Warm ivory, not stark white
+val LightSurface = Color(0xFFFFFFFF)     // Pure white cards
+val LightSurfaceVariant = Color(0xFFFFF9ED) // Subtle gold tint for accents
+val LightPrimary = Color(0xFF9A6F00)     // Rich brown-gold — legible on white
+val LightSecondary = Color(0xFF6B4C00)   // Deeper shade for secondary
+val LightTextPrimary = Color(0xFF1A1A1A) // Near-black — not harsh pure black
+val LightTextSecondary = Color(0xFF636363) // Warm grey
+val LightGoldBackground = Color(0xFFFFF8E1) // Warm gold tint for containers
+val LightSuccessGreen = Color(0xFF388E3C)   // Deeper green for light mode legibility
+val LightSuccessContainer = Color(0xFFE8F5E9) // Subtle green tint for light containers
