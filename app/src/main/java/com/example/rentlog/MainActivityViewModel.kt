@@ -2,6 +2,7 @@ package com.example.rentlog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.rentlog.data.local.PreferencesManager
 import com.example.rentlog.domain.repository.LandlordRepository
 import com.example.rentlog.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainActivityViewModel @Inject constructor(
-    private val repository: LandlordRepository
+    private val repository: LandlordRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
 
     private val _startDestination = MutableStateFlow<String?>(null)
@@ -30,13 +32,14 @@ class MainActivityViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val landlords = repository.getAllLandlords().first()
-                if (landlords.isEmpty()) {
-                    _startDestination.value = Screen.Onboarding.route
-                } else {
-                    _startDestination.value = Screen.Dashboard.route
+                val hasSeenWelcome = preferencesManager.hasSeenWelcome.first()
+                _startDestination.value = when {
+                    landlords.isNotEmpty() -> Screen.Dashboard.route
+                    hasSeenWelcome -> Screen.Onboarding.route
+                    else -> Screen.Welcome.route
                 }
             } catch (e: Exception) {
-                _startDestination.value = Screen.Onboarding.route
+                _startDestination.value = Screen.Welcome.route
             }
         }
     }

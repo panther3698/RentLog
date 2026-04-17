@@ -30,6 +30,16 @@ class PreferencesManager @Inject constructor(@ApplicationContext context: Contex
         preferences[REMINDER_ENABLED] ?: false
     }
 
+    val hasSeenWelcome: Flow<Boolean> = dataStore.data.map { preferences ->
+        preferences[HAS_SEEN_WELCOME] ?: false
+    }
+
+    suspend fun setHasSeenWelcome(seen: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[HAS_SEEN_WELCOME] = seen
+        }
+    }
+
     suspend fun setThemeMode(mode: String) {
         dataStore.edit { preferences ->
             preferences[THEME_MODE] = mode
@@ -52,5 +62,6 @@ class PreferencesManager @Inject constructor(@ApplicationContext context: Contex
         private val THEME_MODE = stringPreferencesKey("theme_mode")
         private val BIOMETRIC_ENABLED = booleanPreferencesKey("biometric_enabled")
         private val REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
+        private val HAS_SEEN_WELCOME = booleanPreferencesKey("has_seen_welcome")
     }
 }

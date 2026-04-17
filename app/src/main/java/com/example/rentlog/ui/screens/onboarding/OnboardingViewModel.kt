@@ -24,6 +24,9 @@ class OnboardingViewModel @Inject constructor(
     private val _landlord = MutableStateFlow<Landlord?>(null)
     val landlord: StateFlow<Landlord?> = _landlord.asStateFlow()
 
+    private val _isSaving = MutableStateFlow(false)
+    val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
+
     init {
         loadLandlord()
     }
@@ -39,14 +42,15 @@ class OnboardingViewModel @Inject constructor(
     }
 
     fun saveLandlord(
-        name: String, 
-        tenantName: String, 
+        name: String,
+        tenantName: String,
         tenantAddress: String,
         landlordAddress: String,
-        pan: String, 
+        pan: String,
         defaultRent: Double
     ) {
         viewModelScope.launch {
+            _isSaving.value = true
             val currentLandlord = _landlord.value ?: Landlord(name = "", panNumber = "")
             repository.insertOrUpdateLandlord(
                 currentLandlord.copy(
@@ -58,6 +62,7 @@ class OnboardingViewModel @Inject constructor(
                     defaultRentAmount = defaultRent
                 )
             )
+            _isSaving.value = false
             _onboardingCompleted.emit(Unit)
         }
     }

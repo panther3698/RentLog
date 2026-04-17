@@ -24,7 +24,10 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "rent_log_db"
-        ).fallbackToDestructiveMigration().build()
+        )
+            .addMigrations(AppDatabase.MIGRATION_2_3)
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides

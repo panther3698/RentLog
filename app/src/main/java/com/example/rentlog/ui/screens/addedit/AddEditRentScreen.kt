@@ -1,17 +1,14 @@
 package com.example.rentlog.ui.screens.addedit
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.CurrencyRupee
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +20,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.rentlog.ui.components.PrimaryButton
+import com.example.rentlog.ui.theme.Elevation
+import com.example.rentlog.ui.theme.Radius
+import com.example.rentlog.ui.theme.Spacing
+import com.example.rentlog.ui.theme.extendedColors
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.*
@@ -35,21 +37,35 @@ fun AddEditRentScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val monthName = DateFormatSymbols().months[state.month - 1]
-    
+
     var showDatePicker by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    val attachmentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> uri?.let { viewModel.onAttachmentChange(it.toString()) } }
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = state.paymentDate,
         selectableDates = object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                return utcTimeMillis <= System.currentTimeMillis()
-            }
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean =
+                utcTimeMillis <= System.currentTimeMillis()
         }
     )
 
+    // Navigate back after save
     LaunchedEffect(state.isSaved) {
-        if (state.isSaved) {
-            onNavigateBack()
+        if (state.isSaved) onNavigateBack()
+    }
+
+    // Show success snackbar briefly before navigating
+    LaunchedEffect(state.showSuccess) {
+        if (state.showSuccess) {
+            snackbarHostState.showSnackbar(
+                message = if (state.isEdit) "Payment updated" else "Payment saved",
+                duration = SnackbarDuration.Short
+            )
+            viewModel.onSuccessShown()
         }
     }
 
@@ -60,12 +76,12 @@ fun AddEditRentScreen(
                 TextButton(onClick = {
                     datePickerState.selectedDateMillis?.let { viewModel.onDateChange(it) }
                     showDatePicker = false
-                }) { Text("OK", fontWeight = FontWeight.Bold) }
+                }) { Text("Confirm", fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
             },
-            shape = RoundedCornerShape(28.dp),
+            shape = Radius.xxl,
             colors = DatePickerDefaults.colors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             DatePicker(state = datePickerState)
@@ -74,21 +90,21 @@ fun AddEditRentScreen(
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
+                title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            monthName, 
-                            style = MaterialTheme.typography.titleLarge, 
+                            monthName,
+                            style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Black
                         )
                         Text(
-                            if (state.isEdit) "Edit Payment" else "New Payment", 
-                            style = MaterialTheme.typography.labelSmall, 
+                            if (state.isEdit) "Editing saved payment" else "Recording new payment",
+                            style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 },
@@ -99,9 +115,16 @@ fun AddEditRentScreen(
                             containerColor = MaterialTheme.colorScheme.surface,
                             contentColor = MaterialTheme.colorScheme.primary
                         ),
-                        modifier = Modifier.padding(start = 8.dp).size(40.dp).shadow(4.dp, RoundedCornerShape(12.dp))
+                        modifier = Modifier
+                            .padding(start = Spacing.sm)
+                            .size(40.dp)
+                            .shadow(Elevation.low, Radius.md)
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(20.dp))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = Color.Transparent)
@@ -112,31 +135,63 @@ fun AddEditRentScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(horizontal = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Spacing.sm))
 
-            // Amount Input Card - Premium Style
+            // Edit mode banner
+            if (state.isEdit) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = Radius.md,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm + Spacing.xs),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(Spacing.sm + Spacing.xs))
+                        Text(
+                            "You're updating an existing payment. Changes are saved immediately.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
+
+            // Amount Input Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .shadow(16.dp, RoundedCornerShape(32.dp), spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                shape = RoundedCornerShape(32.dp),
+                    .shadow(
+                        Elevation.high,
+                        Radius.xxl,
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    ),
+                shape = Radius.xxl,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             ) {
                 Column(
-                    modifier = Modifier.padding(28.dp),
+                    modifier = Modifier.padding(Spacing.xl),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "Monthly Rent Amount", 
-                        style = MaterialTheme.typography.labelLarge, 
+                        "Monthly Rent Amount",
+                        style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
-                    
+
                     TextField(
                         value = state.amount,
                         onValueChange = { viewModel.onAmountChange(it) },
@@ -154,25 +209,25 @@ fun AddEditRentScreen(
                             unfocusedIndicatorColor = Color.Transparent,
                             cursorColor = MaterialTheme.colorScheme.primary
                         ),
-                        placeholder = { 
+                        placeholder = {
                             Text(
-                                "0", 
+                                "0",
                                 modifier = Modifier.fillMaxWidth(),
                                 style = MaterialTheme.typography.displayMedium.copy(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f),
                                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                                 )
-                            ) 
+                            )
                         }
                     )
-                    
+
                     Surface(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = Radius.sm
                     ) {
                         Text(
-                            "INR (₹)", 
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            "INR (₹)",
+                            modifier = Modifier.padding(horizontal = Spacing.sm + Spacing.xs, vertical = Spacing.xs),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -181,43 +236,61 @@ fun AddEditRentScreen(
                 }
             }
 
-            // Interactive Date & Details
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Date Selector
+            // Date & Notes
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Surface(
                     onClick = { showDatePicker = true },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
+                    shape = Radius.xl,
                     color = MaterialTheme.colorScheme.surface,
                     border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(20.dp),
+                        modifier = Modifier.padding(Spacing.lg),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.CalendarMonth, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(16.dp))
+                        Icon(
+                            Icons.Default.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(Spacing.md))
                         Column {
-                            Text("Payment Date", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f))
                             Text(
-                                SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault()).format(Date(state.paymentDate)),
+                                "Payment Date",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            )
+                            Text(
+                                SimpleDateFormat("dd MMMM, yyyy", Locale.getDefault())
+                                    .format(Date(state.paymentDate)),
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Bold
                             )
                         }
                         Spacer(Modifier.weight(1f))
-                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        )
                     }
                 }
 
-                // Transaction Notes
                 OutlinedTextField(
                     value = state.transactionId,
                     onValueChange = { viewModel.onTransactionIdChange(it) },
-                    label = { Text("Transaction ID / Notes") },
+                    label = { Text("Reference / Notes (optional)") },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Notes, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    shape = RoundedCornerShape(20.dp),
+                    leadingIcon = {
+                        Icon(
+                            Icons.Default.Notes,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    shape = Radius.xl,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
@@ -225,28 +298,80 @@ fun AddEditRentScreen(
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
+
+                // Proof of payment attachment
+                val successColor = MaterialTheme.extendedColors.success
+                val hasAttachment = state.attachmentUri.isNotBlank()
+                Surface(
+                    onClick = { attachmentLauncher.launch("image/*") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = Radius.xl,
+                    color = if (hasAttachment) successColor.copy(alpha = 0.08f)
+                            else MaterialTheme.colorScheme.surface,
+                    border = BorderStroke(
+                        1.dp,
+                        if (hasAttachment) successColor.copy(alpha = 0.3f)
+                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(Spacing.lg),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            if (hasAttachment) Icons.Default.CheckCircle else Icons.Default.AttachFile,
+                            contentDescription = null,
+                            tint = if (hasAttachment) successColor else MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(Spacing.md))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "Proof of Payment",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            )
+                            Text(
+                                if (hasAttachment) "Proof attached ✓" else "Attach screenshot or receipt",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (hasAttachment) successColor
+                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                            )
+                        }
+                        if (hasAttachment) {
+                            IconButton(
+                                onClick = { viewModel.onAttachmentChange("") },
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Remove attachment",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                                )
+                            }
+                        } else {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
-            Button(
+            PrimaryButton(
+                text = if (state.isEdit) "SAVE CHANGES" else "LOG PAYMENT",
                 onClick = { viewModel.saveEntry() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .shadow(16.dp, RoundedCornerShape(20.dp), spotColor = MaterialTheme.colorScheme.primary),
-                shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text(
-                    text = if (state.isEdit) "SAVE CHANGES" else "LOG PAYMENT",
-                    letterSpacing = 2.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp
-                )
-            }
-            
-            Spacer(Modifier.height(16.dp))
+                enabled = state.amount.isNotBlank(),
+                isLoading = state.isSaving
+            )
+
+            Spacer(Modifier.height(Spacing.md))
         }
     }
 }

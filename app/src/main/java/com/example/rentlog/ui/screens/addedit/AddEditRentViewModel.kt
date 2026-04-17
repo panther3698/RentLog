@@ -39,6 +39,7 @@ class AddEditRentViewModel @Inject constructor(
                     year = calendarYear,
                     amount = existingEntry?.amount?.toString() ?: landlord?.defaultRentAmount?.toString() ?: "",
                     transactionId = existingEntry?.transactionId ?: "",
+                    attachmentUri = existingEntry?.attachmentUri ?: "",
                     paymentDate = existingEntry?.paymentDate ?: System.currentTimeMillis(),
                     isEdit = existingEntry != null,
                     existingEntryId = existingEntry?.id ?: 0,
@@ -60,28 +61,34 @@ class AddEditRentViewModel @Inject constructor(
         _uiState.update { it.copy(paymentDate = date) }
     }
 
+    fun onAttachmentChange(uri: String) {
+        _uiState.update { it.copy(attachmentUri = uri) }
+    }
+
     fun saveEntry() {
         val state = _uiState.value
         if (state.amount.isBlank() || state.landlordId == 0) return
 
         viewModelScope.launch {
-            // Note: We store the entry with the 'fiscalStartYear' to keep it grouped in queries, 
-            // but the 'calendarYear' is what we display if needed.
-            // Actually, looking at the Room query, it filters by 'year'.
-            // To support Indian FY, 'year' in the DB should represent the Fiscal Start Year.
+            _uiState.update { it.copy(isSaving = true) }
             rentRepository.insertOrUpdateRentEntry(
                 RentEntry(
                     id = state.existingEntryId,
                     month = state.month,
-                    year = fiscalStartYear, 
+                    year = fiscalStartYear,
                     amount = state.amount.toDoubleOrNull() ?: 0.0,
                     paymentDate = state.paymentDate,
                     transactionId = state.transactionId,
-                    landlordId = state.landlordId
+                    landlordId = state.landlordId,
+                    attachmentUri = state.attachmentUri
                 )
             )
-            _uiState.update { it.copy(isSaved = true) }
+            _uiState.update { it.copy(isSaving = false, isSaved = true, showSuccess = true) }
         }
+    }
+
+    fun onSuccessShown() {
+        _uiState.update { it.copy(showSuccess = false) }
     }
 }
 
@@ -90,9 +97,12 @@ data class AddEditUiState(
     val year: Int = 0,
     val amount: String = "",
     val transactionId: String = "",
+    val attachmentUri: String = "",
     val paymentDate: Long = System.currentTimeMillis(),
     val isEdit: Boolean = false,
+    val isSaving: Boolean = false,
     val isSaved: Boolean = false,
+    val showSuccess: Boolean = false,
     val existingEntryId: Int = 0,
     val landlordId: Int = 0
 )
