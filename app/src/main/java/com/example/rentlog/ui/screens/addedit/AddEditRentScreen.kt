@@ -1,11 +1,15 @@
-package com.example.rentlog.ui.screens.addedit
+package com.devchiradhi.rentlog.ui.screens.addedit
 
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -14,17 +18,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.rentlog.ui.components.PrimaryButton
-import com.example.rentlog.ui.theme.Elevation
-import com.example.rentlog.ui.theme.Radius
-import com.example.rentlog.ui.theme.Spacing
-import com.example.rentlog.ui.theme.extendedColors
+import com.devchiradhi.rentlog.ui.components.AppBackButton
+import com.devchiradhi.rentlog.ui.components.PrimaryButton
+import com.devchiradhi.rentlog.ui.theme.Elevation
+import com.devchiradhi.rentlog.ui.theme.Radius
+import com.devchiradhi.rentlog.ui.theme.Spacing
+import com.devchiradhi.rentlog.ui.theme.extendedColors
 import java.text.DateFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,17 +41,45 @@ import java.util.*
 @Composable
 fun AddEditRentScreen(
     onNavigateBack: () -> Unit,
+    onGoPremium: () -> Unit = {},
     viewModel: AddEditRentViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val monthName = DateFormatSymbols().months[state.month - 1]
+    val focusManager = LocalFocusManager.current
+    val scrollState = rememberScrollState()
 
     var showDatePicker by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
+    var amountError by remember { mutableStateOf<String?>(null) }
+    var showTrialExpiredSheet by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
 
-    val attachmentLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri -> uri?.let { viewModel.onAttachmentChange(it.toString()) } }
+    // Determine if the user has made any changes
+    val isDirty = state.amount.isNotBlank() || state.transactionId.isNotBlank()
+
+    // BackHandler — warn on unsaved new entry (edits are fine to discard)
+    BackHandler(enabled = isDirty && !state.isEdit && !state.isSaved) {
+        showDiscardDialog = true
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard changes?") },
+            text = { Text("You have unsaved changes. Are you sure you want to discard them?") },
+            confirmButton = {
+                TextButton(onClick = onNavigateBack) {
+                    Text("Discard")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text("Keep editing")
+                }
+            }
+        )
+    }
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = state.paymentDate,
@@ -67,6 +103,36 @@ fun AddEditRentScreen(
             )
             viewModel.onSuccessShown()
         }
+    }
+
+    // Show attachment error
+    LaunchedEffect(state.attachmentError) {
+        state.attachmentError?.let {
+            snackbarHostState.showSnackbar(
+                message = it,
+                duration = SnackbarDuration.Long
+            )
+            viewModel.clearAttachmentError()
+        }
+    }
+
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text("Discard changes?", fontWeight = FontWeight.Bold) },
+            text = { Text("You have unsaved changes. Go back and discard them?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    onNavigateBack()
+                }) { Text("Discard", color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) { Text("Keep editing") }
+            },
+            shape = Radius.xl,
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     if (showDatePicker) {
@@ -109,21 +175,15 @@ fun AddEditRentScreen(
                     }
                 },
                 navigationIcon = {
-                    IconButton(
-                        onClick = onNavigateBack,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier
-                            .padding(start = Spacing.sm)
-                            .size(40.dp)
-                            .shadow(Elevation.low, Radius.md)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            modifier = Modifier.size(20.dp)
+                    Box(modifier = Modifier.padding(start = Spacing.md)) {
+                        AppBackButton(
+                            onClick = {
+                                if (isDirty && !state.isEdit && !state.isSaved) {
+                                    showDiscardDialog = true
+                                } else {
+                                    onNavigateBack()
+                                }
+                            }
                         )
                     }
                 },
@@ -135,7 +195,8 @@ fun AddEditRentScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = Spacing.lg),
+                .padding(horizontal = Spacing.lg)
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(Spacing.lg)
         ) {
             Spacer(Modifier.height(Spacing.sm))
@@ -148,7 +209,7 @@ fun AddEditRentScreen(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm + Spacing.xs),
+                        modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm2),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
@@ -157,9 +218,9 @@ fun AddEditRentScreen(
                             modifier = Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.primary
                         )
-                        Spacer(Modifier.width(Spacing.sm + Spacing.xs))
+                        Spacer(Modifier.width(Spacing.sm2))
                         Text(
-                            "You're updating an existing payment. Changes are saved immediately.",
+                            "You're updating an existing payment record.",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
                             lineHeight = 18.sp
@@ -179,7 +240,11 @@ fun AddEditRentScreen(
                     ),
                 shape = Radius.xxl,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                border = BorderStroke(
+                    1.dp,
+                    if (amountError != null) MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(Spacing.xl),
@@ -188,20 +253,38 @@ fun AddEditRentScreen(
                     Text(
                         "Monthly Rent Amount",
                         style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (amountError != null) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold
                     )
 
                     TextField(
                         value = state.amount,
-                        onValueChange = { viewModel.onAmountChange(it) },
+                        onValueChange = { value ->
+                            val filtered = value.filter { it.isDigit() || it == '.' }
+                            viewModel.onAmountChange(filtered)
+                            amountError = when {
+                                filtered.isBlank() -> null
+                                filtered.toDoubleOrNull() == null -> "Enter a valid number"
+                                filtered.toDouble() <= 0 -> "Amount must be greater than 0"
+                                filtered.toDouble() > 10_00_000 -> "Amount seems unusually high"
+                                else -> null
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         textStyle = MaterialTheme.typography.displayMedium.copy(
                             fontWeight = FontWeight.Black,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = if (amountError != null) MaterialTheme.colorScheme.error
+                                    else MaterialTheme.colorScheme.onSurface
                         ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Down) }
+                        ),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -221,13 +304,21 @@ fun AddEditRentScreen(
                         }
                     )
 
+                    if (amountError != null) {
+                        Text(
+                            amountError!!,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+
                     Surface(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         shape = Radius.sm
                     ) {
                         Text(
                             "INR (₹)",
-                            modifier = Modifier.padding(horizontal = Spacing.sm + Spacing.xs, vertical = Spacing.xs),
+                            modifier = Modifier.padding(horizontal = Spacing.sm2, vertical = Spacing.xs),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
@@ -278,18 +369,57 @@ fun AddEditRentScreen(
                     }
                 }
 
+                // Payment Mode Selection
+                Text(
+                    "Payment Mode",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    modifier = Modifier.padding(start = Spacing.xs, bottom = Spacing.xs)
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                ) {
+                    listOf("UPI", "Cash", "Transfer").forEach { mode ->
+                        val isSelected = state.paymentMode == mode
+                        Surface(
+                            onClick = { viewModel.onPaymentModeChange(mode) },
+                            modifier = Modifier.weight(1f),
+                            shape = Radius.lg,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                            )
+                        ) {
+                            Text(
+                                text = mode,
+                                modifier = Modifier
+                                    .padding(vertical = Spacing.md)
+                                    .fillMaxWidth(),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
+
                 OutlinedTextField(
                     value = state.transactionId,
                     onValueChange = { viewModel.onTransactionIdChange(it) },
-                    label = { Text("Reference / Notes (optional)") },
+                    label = { Text(if (state.paymentMode == "Cash") "Notes (optional)" else "Transaction ID / Reference") },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = {
                         Icon(
-                            Icons.Default.Notes,
+                            if (state.paymentMode == "Cash") Icons.Default.Notes else Icons.Default.Receipt,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
                     },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     shape = Radius.xl,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -298,80 +428,26 @@ fun AddEditRentScreen(
                         unfocusedContainerColor = MaterialTheme.colorScheme.surface
                     )
                 )
-
-                // Proof of payment attachment
-                val successColor = MaterialTheme.extendedColors.success
-                val hasAttachment = state.attachmentUri.isNotBlank()
-                Surface(
-                    onClick = { attachmentLauncher.launch("image/*") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = Radius.xl,
-                    color = if (hasAttachment) successColor.copy(alpha = 0.08f)
-                            else MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(
-                        1.dp,
-                        if (hasAttachment) successColor.copy(alpha = 0.3f)
-                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier.padding(Spacing.lg),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            if (hasAttachment) Icons.Default.CheckCircle else Icons.Default.AttachFile,
-                            contentDescription = null,
-                            tint = if (hasAttachment) successColor else MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(Modifier.width(Spacing.md))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                "Proof of Payment",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                            )
-                            Text(
-                                if (hasAttachment) "Proof attached ✓" else "Attach screenshot or receipt",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = if (hasAttachment) successColor
-                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                            )
-                        }
-                        if (hasAttachment) {
-                            IconButton(
-                                onClick = { viewModel.onAttachmentChange("") },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.Close,
-                                    contentDescription = "Remove attachment",
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                                )
-                            }
-                        } else {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                            )
-                        }
-                    }
-                }
             }
 
             Spacer(modifier = Modifier.weight(1f))
 
             PrimaryButton(
                 text = if (state.isEdit) "SAVE CHANGES" else "LOG PAYMENT",
-                onClick = { viewModel.saveEntry() },
-                enabled = state.amount.isNotBlank(),
+                onClick = {
+                    val amount = state.amount.toDoubleOrNull()
+                    if (amount == null || amount <= 0) {
+                        amountError = "Please enter a valid amount"
+                        return@PrimaryButton
+                    }
+                    viewModel.saveEntry()
+                },
+                enabled = state.amount.isNotBlank() && amountError == null,
                 isLoading = state.isSaving
             )
 
             Spacer(Modifier.height(Spacing.md))
+            Spacer(Modifier.navigationBarsPadding())
         }
     }
 }

@@ -4,18 +4,21 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    // TODO: Uncomment after adding google-services.json from Firebase Console
+    // id("com.google.gms.google-services")
+    // id("com.google.firebase.crashlytics")
 }
 
 android {
-    namespace = "com.example.rentlog"
+    namespace = "com.devchiradhi.rentlog"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.rentlog"
+        applicationId = "com.devchiradhi.rentlog"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 8
+        versionName = "1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -23,10 +26,14 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
     compileOptions {
@@ -43,6 +50,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -85,6 +93,18 @@ dependencies {
     // Glance (home screen widget)
     implementation("androidx.glance:glance-appwidget:1.1.1")
     implementation("androidx.glance:glance-material3:1.1.1")
+
+    // Android 12+ Splash Screen API
+    implementation("androidx.core:core-splashscreen:1.0.1")
+
+    // Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:7.1.1")
+
+    // Firebase / Crashlytics
+    // TODO: Uncomment after google-services.json is in app/ and plugin is enabled above
+    // implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    // implementation("com.google.firebase:firebase-crashlytics-ktx")
+    // implementation("com.google.firebase:firebase-analytics-ktx")
 
     // Google Play In-App Review
     implementation("com.google.android.play:review-ktx:2.0.1")
