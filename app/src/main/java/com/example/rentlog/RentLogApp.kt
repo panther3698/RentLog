@@ -1,4 +1,4 @@
-package com.example.rentlog
+package com.devchiradhi.rentlog
 
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory

@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.screens.welcome
+package com.devchiradhi.rentlog.ui.screens.welcome
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -23,10 +23,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.rentlog.ui.components.PrimaryButton
-import com.example.rentlog.ui.theme.Elevation
-import com.example.rentlog.ui.theme.Radius
-import com.example.rentlog.ui.theme.Spacing
+import com.devchiradhi.rentlog.ui.components.PrimaryButton
+import com.devchiradhi.rentlog.ui.theme.Elevation
+import com.devchiradhi.rentlog.ui.theme.Radius
+import com.devchiradhi.rentlog.ui.theme.Spacing
 
 @Composable
 fun WelcomeScreen(
@@ -140,7 +140,7 @@ fun WelcomeScreen(
                 Spacer(Modifier.height(Spacing.xl))
 
                 PrimaryButton(
-                    text = "GET STARTED — IT'S FREE",
+                    text = "GET STARTED",
                     onClick = {
                         viewModel.markWelcomeSeen()
                         onGetStarted()
@@ -205,17 +205,26 @@ private fun SampleReceiptCard() {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(Spacing.lg)) {
+
+            // Header row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "RENT RECEIPT",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Black,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Column {
+                    Text(
+                        "RENT RECEIPT",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "Section 10(13A)  |  FY 2025-26",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                    )
+                }
                 Surface(
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                     shape = Radius.sm
@@ -234,8 +243,11 @@ private fun SampleReceiptCard() {
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
             Spacer(Modifier.height(Spacing.sm))
 
+            // Body — matches actual PDF receipt body
             Text(
-                "Received with thanks from Rahul Sharma a sum of Rs. 25,000 (Rupees Twenty-Five Thousand only) towards rent for the period of March 2025.",
+                "Received with thanks from Rahul Sharma a sum of Rs. 25,000 " +
+                "(Rupees Twenty-Five Thousand only) towards rent for the month of " +
+                "March 2025 for the premises at B-204, Sector 18, Noida.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
                 lineHeight = 18.sp
@@ -243,16 +255,20 @@ private fun SampleReceiptCard() {
 
             Spacer(Modifier.height(Spacing.sm))
 
-            ReceiptRow("Landlord", "Suresh Kumar")
-            ReceiptRow("PAN", "ABCDE1234F")
-            ReceiptRow("Property", "B-204, Sector 18, Noida")
-            ReceiptRow("Payment Date", "01 March 2025")
-            ReceiptRow("Ref / UPI", "UPI-4782930012")
+            // Details — mirrors actual PDF fields
+            ReceiptRow("Landlord Name",    "Suresh Kumar")
+            ReceiptRow("Landlord Address", "C-12, Vasant Kunj, Delhi")
+            ReceiptRow("Rented Premises",  "B-204, Sector 18, Noida")
+            ReceiptRow("Landlord PAN",     "ABCDE1234F")
+            ReceiptRow("Payment Mode",     "UPI")
+            ReceiptRow("Payment Date",     "01 March 2025")
+            ReceiptRow("Transaction No.",  "UPI-4782930012")
 
             Spacer(Modifier.height(Spacing.sm))
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
             Spacer(Modifier.height(Spacing.sm))
 
+            // Signature row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -270,9 +286,9 @@ private fun SampleReceiptCard() {
             }
 
             Spacer(Modifier.height(Spacing.sm))
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+
+            // Footer note
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     Icons.Default.CheckCircle,
                     contentDescription = null,
@@ -281,7 +297,7 @@ private fun SampleReceiptCard() {
                 )
                 Spacer(Modifier.width(Spacing.xs))
                 Text(
-                    "Computer-generated for HRA / income tax purposes",
+                    "Valid for HRA claim · Old tax regime only · For use with Form 12BB",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f)
                 )

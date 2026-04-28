@@ -1,16 +1,9 @@
-package com.example.rentlog.worker
+package com.devchiradhi.rentlog.worker
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.os.Build
-import androidx.core.app.NotificationCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
-import com.example.rentlog.MainActivity
-import com.example.rentlog.R
+import com.devchiradhi.rentlog.ui.util.NotificationHelper
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.*
@@ -23,43 +16,22 @@ class ReminderWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Rent Reminders",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
-
-        val intent = Intent(applicationContext, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            applicationContext, 0, intent,
-            PendingIntent.FLAG_IMMUTABLE
-        )
-
-        val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_idle_alarm) // Use a better icon if available
-            .setContentTitle("Rent Due Today")
-            .setContentText("Don't forget to pay and log your rent for this month!")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-
-        notificationManager.notify(1, notification)
-        
+        NotificationHelper.showReminderNotification(applicationContext)
         return Result.success()
     }
 
     companion object {
-        const val CHANNEL_ID = "rent_reminders"
+        private const val WORK_NAME = "RentReminder"
 
-        fun schedule(context: Context) {
+        fun sync(context: Context, enabled: Boolean) {
+            if (enabled) {
+                schedule(context)
+            } else {
+                cancel(context)
+            }
+        }
+
+        private fun schedule(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
                 .build()
@@ -84,14 +56,14 @@ class ReminderWorker @AssistedInject constructor(
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                "RentReminder",
+                WORK_NAME,
                 ExistingPeriodicWorkPolicy.UPDATE,
                 request
             )
         }
 
         fun cancel(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork("RentReminder")
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.components
+package com.devchiradhi.rentlog.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Column
@@ -11,9 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.rentlog.ui.theme.Elevation
-import com.example.rentlog.ui.theme.Radius
-import com.example.rentlog.ui.theme.Spacing
+import androidx.compose.ui.unit.sp
+import com.devchiradhi.rentlog.ui.theme.Elevation
+import com.devchiradhi.rentlog.ui.theme.Radius
+import com.devchiradhi.rentlog.ui.theme.Spacing
 
 @Composable
 fun StatCard(
@@ -28,17 +29,18 @@ fun StatCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.08f)),
         elevation = CardDefaults.cardElevation(defaultElevation = Elevation.low)
     ) {
-        Column(modifier = Modifier.padding(horizontal = Spacing.md, vertical = Spacing.sm + Spacing.xs)) {
+        Column(modifier = Modifier.padding(horizontal = Spacing.md, vertical = 6.dp)) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
-                fontWeight = FontWeight.Medium
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                fontWeight = FontWeight.Bold,
+                fontSize = 9.sp
             )
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Black,
                 color = MaterialTheme.colorScheme.primary
             )
         }

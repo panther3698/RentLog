@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.screens.dashboard
+package com.devchiradhi.rentlog.ui.screens.dashboard
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
@@ -15,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -24,25 +25,56 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.rentlog.ui.components.MonthCard
-import com.example.rentlog.ui.components.StatCard
-import com.example.rentlog.ui.theme.*
-import com.example.rentlog.ui.util.FiscalYearHelper
+import com.devchiradhi.rentlog.ui.components.MonthCard
+import com.devchiradhi.rentlog.ui.components.StatCard
+import com.devchiradhi.rentlog.ui.theme.*
+import com.devchiradhi.rentlog.ui.util.FiscalYearHelper
+import com.devchiradhi.rentlog.ui.util.TrialStatus
 import java.util.*
 
 @Composable
 fun DashboardScreen(
-    onMonthClick: (Int) -> Unit,
-    onSummaryClick: () -> Unit,
+    onMonthClick: (month: Int, fiscalYear: Int) -> Unit,
+    onSummaryClick: (fiscalYear: Int) -> Unit,
     onSettingsClick: () -> Unit,
     onCalculatorClick: () -> Unit,
+    onGoPremium: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val entries by viewModel.rentEntries.collectAsState()
     val fiscalStartYear by viewModel.selectedFiscalYear.collectAsState()
+    val activeLandlord by viewModel.activeLandlord.collectAsState()
+    val trialStatus by viewModel.trialStatus.collectAsState()
     val fiscalMonths = FiscalYearHelper.getFiscalMonths()
+    val scrollState = rememberScrollState()
 
     var showYearSelector by remember { mutableStateOf(false) }
+    var entryToDelete by remember { mutableStateOf<com.devchiradhi.rentlog.domain.model.RentEntry?>(null) }
+
+    // Delete confirmation dialog
+    entryToDelete?.let { entry ->
+        val monthName = java.text.DateFormatSymbols().months[entry.month - 1]
+        AlertDialog(
+            onDismissRequest = { entryToDelete = null },
+            title = { Text("Delete payment?", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Remove the ₹${entry.amount.toInt()} payment for $monthName? This cannot be undone."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteEntry(entry)
+                    entryToDelete = null
+                }) { Text("Delete", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) }
+            },
+            dismissButton = {
+                TextButton(onClick = { entryToDelete = null }) { Text("Cancel") }
+            },
+            shape = Radius.xl,
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    }
 
     if (showYearSelector) {
         val currentYear = FiscalYearHelper.getCurrentFiscalYear()
@@ -103,243 +135,328 @@ fun DashboardScreen(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = Spacing.lg),
-            contentPadding = PaddingValues(
-                top = padding.calculateTopPadding() + Spacing.md,
-                bottom = Spacing.xxl
-            ),
-            verticalArrangement = Arrangement.spacedBy(Spacing.md),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                .padding(top = padding.calculateTopPadding())
+                .padding(horizontal = Spacing.md)
+                .verticalScroll(scrollState)
         ) {
-            // Header
-            item(span = { GridItemSpan(2) }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = Spacing.md, bottom = Spacing.sm),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            text = "Rent Log",
-                            style = MaterialTheme.typography.displaySmall.copy(
-                                color = MaterialTheme.colorScheme.primary
-                            )
+
+            // ── Fixed header section ──────────────────────────────────────────
+
+            Spacer(Modifier.height(Spacing.md))
+
+            // Title row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Spacing.md, bottom = Spacing.md),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Rent Log",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.ExtraBold
                         )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Surface(
-                                onClick = { showYearSelector = true },
-                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                                shape = Radius.sm
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            onClick = { showYearSelector = true },
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                            shape = Radius.sm
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(horizontal = Spacing.sm, vertical = Spacing.xs)
-                                ) {
-                                    Text(
-                                        text = FiscalYearHelper.getFiscalYearLabel(fiscalStartYear),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Icon(
-                                        Icons.Default.ArrowDropDown,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
+                                Text(
+                                    text = FiscalYearHelper.getFiscalYearLabel(fiscalStartYear),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 13.sp
+                                )
+                                Icon(
+                                    Icons.Default.ArrowDropDown,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
-                            Spacer(Modifier.width(Spacing.sm))
-                            Text(
-                                text = "Financial Year",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f)
-                            )
                         }
+                        Spacer(Modifier.width(Spacing.sm))
+                        Text(
+                            text = "Financial Year",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                            fontSize = 12.sp
+                        )
                     }
-                    IconButton(
-                        onClick = onSettingsClick,
-                        colors = IconButtonDefaults.iconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.primary
-                        ),
-                        modifier = Modifier.shadow(Elevation.medium, Radius.md)
-                    ) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
-                    }
+                }
+                IconButton(
+                    onClick = onSettingsClick,
+                    modifier = Modifier.size(48.dp),
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(Icons.Default.Settings, contentDescription = "Settings", modifier = Modifier.size(28.dp))
                 }
             }
 
-            // Reports CTA Card
-            item(span = { GridItemSpan(2) }) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSummaryClick() }
-                        .shadow(
-                            Elevation.premium,
-                            Radius.xl,
-                            spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
-                        ),
-                    shape = Radius.xl,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-                ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(100.dp)
-                                .background(
-                                    Brush.horizontalGradient(
-                                        colors = listOf(
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                            Color.Transparent
-                                        )
-                                    )
-                                )
-                        )
+            // ── Trial status badge ────────────────────────────────────────────
+            when (val status = trialStatus) {
+                is TrialStatus.InTrial -> {
+                    val isLastDays = status.daysRemaining <= 3
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = Radius.md,
+                        color = if (isLastDays)
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.08f)
+                        else
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(Spacing.lg),
+                                .padding(horizontal = Spacing.md, vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Surface(
-                                color = MaterialTheme.colorScheme.primary,
-                                shape = Radius.lg,
-                                shadowElevation = Elevation.medium
-                            ) {
-                                Icon(
-                                    Icons.Default.Description,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier
-                                        .padding(14.dp)
-                                        .size(28.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(Spacing.lg))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    "Tax Reports & PDFs",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    "Create HRA receipts for tax filing",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                                )
-                            }
-                            Icon(
-                                Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            Text(
+                                text = if (isLastDays)
+                                    "⚡ Trial ends in ${status.daysRemaining} days"
+                                else
+                                    "🎉 Free trial — ${status.daysRemaining} days left",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isLastDays)
+                                    MaterialTheme.colorScheme.error
+                                else
+                                    MaterialTheme.colorScheme.primary
                             )
+                            TextButton(
+                                onClick = onGoPremium,
+                                contentPadding = PaddingValues(horizontal = Spacing.sm, vertical = 0.dp)
+                            ) {
+                                Text(
+                                    "Upgrade",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Black,
+                                    color = if (isLastDays)
+                                        MaterialTheme.colorScheme.error
+                                    else
+                                        MaterialTheme.colorScheme.primary
+                                )
+                            }
                         }
                     }
+                    Spacer(Modifier.height(Spacing.xs))
                 }
+                is TrialStatus.Expired -> {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = Radius.lg,
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Trial ended — Features locked",
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            TextButton(
+                                onClick = onGoPremium,
+                                contentPadding = PaddingValues(horizontal = Spacing.sm, vertical = 0.dp)
+                            ) {
+                                Text(
+                                    "GO PREMIUM",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Black,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(Spacing.xs))
+                }
+                is TrialStatus.Premium -> { /* silent — no badge needed */ }
             }
 
-            // HRA Calculator card
-            item(span = { GridItemSpan(2) }) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onCalculatorClick() },
-                    shape = Radius.xl,
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                ) {
+            // Tax Reports CTA
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSummaryClick(fiscalStartYear) }
+                    .shadow(
+                        Elevation.medium,
+                        Radius.lg,
+                        spotColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                    ),
+                shape = Radius.lg,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+            ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(64.dp)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(Spacing.lg),
+                            .padding(horizontal = Spacing.md, vertical = Spacing.md),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = Radius.lg
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = Radius.md,
+                            shadowElevation = Elevation.low
                         ) {
                             Icon(
-                                Icons.Default.Calculate,
+                                Icons.Default.Description,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier
-                                    .padding(12.dp)
+                                    .padding(10.dp)
                                     .size(24.dp)
                             )
                         }
                         Spacer(modifier = Modifier.width(Spacing.md))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                "HRA Calculator",
-                                style = MaterialTheme.typography.bodyLarge,
+                                "Tax Reports & PDFs",
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                "Section 10(13A) — how much you save",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                "Create HRA receipts",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                             )
                         }
                         Icon(
                             Icons.Default.ChevronRight,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
             }
 
-            // Stats Row
-            item(span = { GridItemSpan(2) }) {
-                val paidCount = fiscalMonths.count { month -> entries.any { it.month == month } }
-                val totalPaid = entries.sumOf { it.amount }
+            Spacer(Modifier.height(Spacing.md))
+
+            // HRA Calculator card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onCalculatorClick() },
+                shape = Radius.lg,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.08f))
+            ) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Spacing.md, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        label = "Paid",
-                        value = "$paidCount / 12 months"
-                    )
-                    StatCard(
-                        modifier = Modifier.weight(1f),
-                        label = "Total This FY",
-                        value = "₹${String.format(Locale.getDefault(), "%,.0f", totalPaid)}"
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                        shape = Radius.md
+                    ) {
+                        Icon(
+                            Icons.Default.Calculate,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(Spacing.md))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "HRA Calculator",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
 
-            // Section header + first-use hint
-            item(span = { GridItemSpan(2) }) {
-                Column(
-                    modifier = Modifier.padding(
-                        top = Spacing.sm,
-                        start = Spacing.xs
-                    )
-                ) {
+            Spacer(Modifier.height(Spacing.md))
+
+            // Stats row
+            val paidCount = fiscalMonths.count { month -> entries.any { it.month == month } }
+            val totalPaid = entries.sumOf { it.amount }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+            ) {
+                StatCard(
+                    modifier = Modifier.weight(0.4f),
+                    label = "Paid",
+                    value = "$paidCount / 12"
+                )
+                StatCard(
+                    modifier = Modifier.weight(0.6f),
+                    label = "Total This FY",
+                    value = "₹${String.format(Locale.getDefault(), "%,.0f", totalPaid)}"
+                )
+            }
+
+            Spacer(Modifier.height(Spacing.lg))
+
+            // Section label
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = Spacing.xs, bottom = Spacing.sm),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
                     Text(
                         text = "Monthly Payments",
-                        style = MaterialTheme.typography.titleSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)
                     )
                     if (entries.isEmpty()) {
                         Text(
                             text = "Tap any month to record a payment",
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                             modifier = Modifier.padding(top = Spacing.xs)
                         )
@@ -347,30 +464,156 @@ fun DashboardScreen(
                 }
             }
 
-            // Month grid or empty state
-            if (entries.isEmpty() && fiscalStartYear > FiscalYearHelper.getCurrentFiscalYear()) {
-                item(span = { GridItemSpan(2) }) {
-                    FutureYearEmptyState(fiscalLabel = FiscalYearHelper.getFiscalYearLabel(fiscalStartYear))
-                }
-            } else {
-                items(fiscalMonths) { month ->
-                    val entry = entries.find { it.month == month }
-                    var isPressed by remember { mutableStateOf(false) }
-                    val scale by animateFloatAsState(
-                        targetValue = if (isPressed) 0.94f else 1f,
-                        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy),
-                        label = "scale"
-                    )
+            Spacer(Modifier.height(Spacing.xs))
 
-                    MonthCard(
-                        modifier = Modifier
-                            .scale(scale)
-                            .clickable { onMonthClick(month) },
-                        month = month,
-                        entry = entry
-                    )
+            // ── Month grid (non-lazy to allow parent scrolling) ─────────────────
+
+            if (activeLandlord == null) {
+                NoProfileEmptyState(onSetupClick = onSettingsClick)
+            } else if (entries.isEmpty() && fiscalStartYear > FiscalYearHelper.getCurrentFiscalYear()) {
+                FutureYearEmptyState(fiscalLabel = FiscalYearHelper.getFiscalYearLabel(fiscalStartYear))
+            } else if (entries.isEmpty()) {
+                EmptyDashboardState(onMonthClick = { onMonthClick(FiscalYearHelper.getFiscalMonths().first(), fiscalStartYear) })
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md)
+                ) {
+                    val rows = fiscalMonths.chunked(2)
+                    rows.forEach { rowMonths ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md)
+                        ) {
+                            rowMonths.forEach { month ->
+                                val entry = entries.find { it.month == month }
+                                var isPressed by remember { mutableStateOf(false) }
+                                val scale by animateFloatAsState(
+                                    targetValue = if (isPressed) 0.94f else 1f,
+                                    animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy),
+                                    label = "scale"
+                                )
+
+                                MonthCard(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .scale(scale)
+                                        .clickable { onMonthClick(month, fiscalStartYear) },
+                                    month = month,
+                                    entry = entry,
+                                    onDeleteClick = if (entry != null) {
+                                        { entryToDelete = entry }
+                                    } else null
+                                )
+                            }
+                            // If row has only 1 item, add a spacer to maintain alignment
+                            if (rowMonths.size == 1) {
+                                Spacer(Modifier.weight(1f))
+                            }
+                        }
+                    }
                 }
             }
+            Spacer(Modifier.height(Spacing.xxl))
+        }
+    }
+}
+
+@Composable
+private fun EmptyDashboardState(onMonthClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Spacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+            shape = Radius.xxl
+        ) {
+            Icon(
+                Icons.Default.PostAdd,
+                contentDescription = null,
+                modifier = Modifier.padding(Spacing.lg).size(40.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            )
+        }
+        Spacer(Modifier.height(Spacing.md))
+        Text(
+            text = "No payments recorded",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            text = "Your dashboard is empty. Start by logging your first rent payment.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = Spacing.xl)
+        )
+        Spacer(Modifier.height(Spacing.lg))
+        Button(
+            onClick = onMonthClick,
+            shape = Radius.lg,
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = Elevation.low)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(Spacing.sm))
+            Text("Log First Payment", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun NoProfileEmptyState(onSetupClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = Spacing.xxl),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+            shape = Radius.xxl
+        ) {
+            Icon(
+                Icons.Default.PersonAdd,
+                contentDescription = null,
+                modifier = Modifier.padding(Spacing.lg).size(40.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            )
+        }
+        Spacer(Modifier.height(Spacing.md))
+        Text(
+            text = "Set up your profile first",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            text = "Add your landlord details to start tracking rent payments",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = Spacing.lg)
+        )
+        Spacer(Modifier.height(Spacing.lg))
+        Button(
+            onClick = onSetupClick,
+            shape = Radius.lg
+        ) {
+            Icon(
+                Icons.Default.PersonAdd,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(Modifier.width(Spacing.sm))
+            Text("Set Up Profile", fontWeight = FontWeight.Bold)
         }
     }
 }

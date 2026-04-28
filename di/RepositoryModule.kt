@@ -1,7 +1,7 @@
-package com.example.rentlog.di
+package com.devchiradhi.rentlog.di
 
-import com.example.rentlog.data.repository.RentLogRepositoryImpl
-import com.example.rentlog.domain.repository.RentLogRepository
+import com.devchiradhi.rentlog.data.repository.RentLogRepositoryImpl
+import com.devchiradhi.rentlog.domain.repository.RentLogRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

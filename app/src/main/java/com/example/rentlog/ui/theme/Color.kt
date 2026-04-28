@@ -1,29 +1,29 @@
-package com.example.rentlog.ui.theme
+package com.devchiradhi.rentlog.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Dark Palette — Deep Obsidian & Premium Gold
-val DarkGray = Color(0xFF080808)          // Near-black, richer than pure black
-val SurfaceColor = Color(0xFF131313)      // Slightly lifted surface
-val SurfaceVariant = Color(0xFF1C1C1C)    // Card headers, elevated elements
-val PrimaryGold = Color(0xFFFFCC00)       // Warmer, richer gold (more premium than pure yellow)
-val SecondaryGold = Color(0xFFD4A017)     // Deep gold for secondary accents
-val TextPrimary = Color(0xFFEEEEEE)       // Softer than pure white — easier on eyes
-val TextSecondary = Color(0xFFAAAAAA)     // Muted secondary text
-val AccentColor = Color(0xFF242424)       // Used for primaryContainer
-val ErrorRed = Color(0xFFE57373)          // Slightly softer red for better readability
-val SuccessGreen = Color(0xFF4CAF50)      // Paid / confirmed state
-val SuccessGreenContainer = Color(0xFF1B3A1F) // Dark surface for success containers
-val OnSuccessGreen = Color(0xFFFFFFFF)    // Text/icons on SuccessGreen
+// Dark Palette — Forest & Obsidian
+val DarkGray = Color(0xFF080808)          // Reverted to Deep Obsidian
+val SurfaceColor = Color(0xFF131313)      
+val SurfaceVariant = Color(0xFF1C1C1C)    
+val PrimaryGold = Color(0xFFD4E2DD)       // Keeping Mint Green as Primary
+val SecondaryGold = Color(0xFF52B788)     // Forest Green accent
+val TextPrimary = Color(0xFFE8F1EF)       // Very light mint-white
+val TextSecondary = Color(0xFF94A8A3)     // Muted mint-grey
+val AccentColor = Color(0xFF2D6A4F)       // Forest Green
+val ErrorRed = Color(0xFFFF8B8B)          
+val SuccessGreen = Color(0xFF74C69D)      
+val SuccessGreenContainer = Color(0xFF1B4332)
+val OnSuccessGreen = Color(0xFFFFFFFF)    
 
-// Light Palette — Warm Ivory & Champagne Gold
-val LightBackground = Color(0xFFF8F7F4)  // Warm ivory, not stark white
-val LightSurface = Color(0xFFFFFFFF)     // Pure white cards
-val LightSurfaceVariant = Color(0xFFFFF9ED) // Subtle gold tint for accents
-val LightPrimary = Color(0xFF9A6F00)     // Rich brown-gold — legible on white
-val LightSecondary = Color(0xFF6B4C00)   // Deeper shade for secondary
-val LightTextPrimary = Color(0xFF1A1A1A) // Near-black — not harsh pure black
-val LightTextSecondary = Color(0xFF636363) // Warm grey
-val LightGoldBackground = Color(0xFFFFF8E1) // Warm gold tint for containers
-val LightSuccessGreen = Color(0xFF388E3C)   // Deeper green for light mode legibility
-val LightSuccessContainer = Color(0xFFE8F5E9) // Subtle green tint for light containers
+// Light Palette — Mint & Forest
+val LightBackground = Color(0xFFF8F7F4)  // Reverted to Warm Ivory
+val LightSurface = Color(0xFFFFFFFF)     
+val LightSurfaceVariant = Color(0xFFF1F5F3) // Subtle mint tint for surfaces
+val LightPrimary = Color(0xFF1B4332)     // Deep Forest Green
+val LightSecondary = Color(0xFF2D6A4F)   // Forest Green
+val LightTextPrimary = Color(0xFF081C15) // Deepest forest green (near black)
+val LightTextSecondary = Color(0xFF40916C) // Mid forest green
+val LightGoldBackground = Color(0xFFB7D1C7) // Mint accent
+val LightSuccessGreen = Color(0xFF2D6A4F)   
+val LightSuccessContainer = Color(0xFF95D5B2)

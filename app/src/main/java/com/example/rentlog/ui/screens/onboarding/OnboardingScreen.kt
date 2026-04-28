@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.screens.onboarding
+package com.devchiradhi.rentlog.ui.screens.onboarding
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -18,13 +18,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.rentlog.ui.components.FormField
-import com.example.rentlog.ui.components.PrimaryButton
-import com.example.rentlog.ui.theme.Elevation
-import com.example.rentlog.ui.theme.Radius
-import com.example.rentlog.ui.theme.Spacing
+import com.devchiradhi.rentlog.ui.components.AppBackButton
+import com.devchiradhi.rentlog.ui.components.FormField
+import com.devchiradhi.rentlog.ui.components.PrimaryButton
+import com.devchiradhi.rentlog.ui.theme.Elevation
+import com.devchiradhi.rentlog.ui.theme.Radius
+import com.devchiradhi.rentlog.ui.theme.Spacing
 
 @Composable
 fun OnboardingScreen(
@@ -92,7 +94,6 @@ fun OnboardingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
-                .navigationBarsPadding()
                 .padding(horizontal = Spacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -223,22 +224,16 @@ fun OnboardingScreen(
                 isLoading = isSaving
             )
             Spacer(modifier = Modifier.height(Spacing.lg))
+            Spacer(modifier = Modifier.navigationBarsPadding())
         }
 
         if (isEditMode && onBack != null) {
-            IconButton(
-                onClick = onBack,
+            Box(
                 modifier = Modifier
                     .statusBarsPadding()
-                    .padding(Spacing.md)
-                    .shadow(Elevation.medium, Radius.md)
-                    .background(MaterialTheme.colorScheme.surface, Radius.md)
+                    .padding(Spacing.sm)
             ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+                AppBackButton(onClick = onBack)
             }
         }
     }

@@ -1,10 +1,10 @@
-package com.example.rentlog
+package com.devchiradhi.rentlog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rentlog.data.local.PreferencesManager
-import com.example.rentlog.domain.repository.LandlordRepository
-import com.example.rentlog.ui.navigation.Screen
+import com.devchiradhi.rentlog.data.local.PreferencesManager
+import com.devchiradhi.rentlog.domain.repository.LandlordRepository
+import com.devchiradhi.rentlog.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,6 +25,7 @@ class MainActivityViewModel @Inject constructor(
     val isUnlocked = _isUnlocked.asStateFlow()
 
     init {
+        viewModelScope.launch { preferencesManager.initFirstLaunchTimestamp() }
         determineStartDestination()
     }
 

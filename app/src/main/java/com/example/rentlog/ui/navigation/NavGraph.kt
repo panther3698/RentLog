@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.navigation
+package com.devchiradhi.rentlog.ui.navigation
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -8,14 +8,14 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import com.example.rentlog.ui.screens.addedit.AddEditRentScreen
-import com.example.rentlog.ui.screens.calculator.HraCalculatorScreen
-import com.example.rentlog.ui.screens.dashboard.DashboardScreen
-import com.example.rentlog.ui.screens.onboarding.OnboardingScreen
-import com.example.rentlog.ui.screens.premium.PremiumScreen
-import com.example.rentlog.ui.screens.settings.SettingsScreen
-import com.example.rentlog.ui.screens.summary.SummaryScreen
-import com.example.rentlog.ui.screens.welcome.WelcomeScreen
+import com.devchiradhi.rentlog.ui.screens.addedit.AddEditRentScreen
+import com.devchiradhi.rentlog.ui.screens.calculator.HraCalculatorScreen
+import com.devchiradhi.rentlog.ui.screens.dashboard.DashboardScreen
+import com.devchiradhi.rentlog.ui.screens.onboarding.OnboardingScreen
+import com.devchiradhi.rentlog.ui.screens.premium.PremiumScreen
+import com.devchiradhi.rentlog.ui.screens.settings.SettingsScreen
+import com.devchiradhi.rentlog.ui.screens.summary.SummaryScreen
+import com.devchiradhi.rentlog.ui.screens.welcome.WelcomeScreen
 
 @Composable
 fun NavGraph(navController: NavHostController, startDestination: String) {
@@ -78,24 +78,30 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
 
         composable(Screen.Dashboard.route) {
             DashboardScreen(
-                onMonthClick = { month ->
-                    navController.navigate(Screen.AddEditRent.createRoute(month))
+                onMonthClick = { month, fiscalYear ->
+                    navController.navigate(Screen.AddEditRent.createRoute(month, fiscalYear))
                 },
-                onSummaryClick = {
-                    navController.navigate(Screen.Summary.route)
+                onSummaryClick = { fiscalYear ->
+                    navController.navigate(Screen.Summary.createRoute(fiscalYear))
                 },
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
                 },
                 onCalculatorClick = {
                     navController.navigate(Screen.HraCalculator.route)
+                },
+                onGoPremium = {
+                    navController.navigate(Screen.Premium.route)
                 }
             )
         }
 
         composable(
             route = Screen.AddEditRent.route,
-            arguments = listOf(navArgument("month") { type = NavType.IntType }),
+            arguments = listOf(
+                navArgument("month") { type = NavType.IntType },
+                navArgument("fiscalYear") { type = NavType.IntType }
+            ),
             enterTransition = {
                 slideInVertically(initialOffsetY = { it }, animationSpec = tween(400)) + fadeIn()
             },
@@ -103,11 +109,20 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
                 slideOutVertically(targetOffsetY = { it }, animationSpec = tween(400)) + fadeOut()
             }
         ) {
-            AddEditRentScreen(onNavigateBack = { navController.popBackStack() })
+            AddEditRentScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onGoPremium = { navController.navigate(Screen.Premium.route) }
+            )
         }
 
-        composable(Screen.Summary.route) {
-            SummaryScreen(onNavigateBack = { navController.popBackStack() })
+        composable(
+            route = Screen.Summary.route,
+            arguments = listOf(navArgument("fiscalYear") { type = NavType.IntType })
+        ) {
+            SummaryScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onGoPremium = { navController.navigate(Screen.Premium.route) }
+            )
         }
 
         composable(Screen.Settings.route) {
@@ -127,7 +142,10 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
                 slideOutVertically(targetOffsetY = { it }, animationSpec = tween(400)) + fadeOut()
             }
         ) {
-            HraCalculatorScreen(onNavigateBack = { navController.popBackStack() })
+            HraCalculatorScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onGoPremium = { navController.navigate(Screen.Premium.route) }
+            )
         }
 
         composable(Screen.Premium.route) {

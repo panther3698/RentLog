@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.components
+package com.devchiradhi.rentlog.ui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,9 +16,9 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.rentlog.ui.theme.Elevation
-import com.example.rentlog.ui.theme.Radius
-import com.example.rentlog.ui.theme.Spacing
+import com.devchiradhi.rentlog.ui.theme.Elevation
+import com.devchiradhi.rentlog.ui.theme.Radius
+import com.devchiradhi.rentlog.ui.theme.Spacing
 
 @Composable
 fun PrimaryButton(

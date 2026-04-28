@@ -1,6 +1,7 @@
-package com.example.rentlog.widget
+package com.devchiradhi.rentlog.widget
 
 import android.content.Context
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -11,6 +12,7 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -23,12 +25,10 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.unit.ColorProvider
 import androidx.room.Room
-import com.example.rentlog.MainActivity
-import com.example.rentlog.R
-import com.example.rentlog.data.local.AppDatabase
-import com.example.rentlog.ui.util.FiscalYearHelper
+import com.devchiradhi.rentlog.MainActivity
+import com.devchiradhi.rentlog.data.local.AppDatabase
+import com.devchiradhi.rentlog.ui.util.FiscalYearHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.text.DateFormatSymbols
@@ -54,7 +54,7 @@ class RentLogWidget : GlanceAppWidget() {
             context.applicationContext,
             AppDatabase::class.java,
             "rent_log_db"
-        ).addMigrations(AppDatabase.MIGRATION_2_3, AppDatabase.MIGRATION_3_4)
+        ).addMigrations(AppDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
 
@@ -69,13 +69,24 @@ class RentLogWidget : GlanceAppWidget() {
 
         db.close()
 
+        val paymentMode = currentMonthEntry?.transactionId?.let { txId ->
+            when {
+                txId.startsWith("UPI", ignoreCase = true) -> "UPI"
+                txId.startsWith("NEFT", ignoreCase = true) -> "NEFT"
+                txId.startsWith("IMPS", ignoreCase = true) -> "IMPS"
+                txId.startsWith("RTGS", ignoreCase = true) -> "RTGS"
+                txId.isBlank() -> "Cash"
+                else -> "Online"
+            }
+        }
+
         return WidgetData(
             currentMonth = currentMonth,
             monthName = DateFormatSymbols().months[currentMonth - 1],
             year = FiscalYearHelper.getCalendarYearForMonth(currentMonth, fiscalYear),
             isPaid = currentMonthEntry != null,
             amount = currentMonthEntry?.amount,
-            paymentMode = currentMonthEntry?.paymentMode,
+            paymentMode = paymentMode,
             paymentDate = currentMonthEntry?.paymentDate,
             totalPaid = totalPaid,
             paidCount = paidCount,
@@ -99,12 +110,13 @@ data class WidgetData(
 
 @androidx.compose.runtime.Composable
 fun RentLogWidgetContent(data: WidgetData) {
-    val bgColor = ColorProvider(R.color.widget_bg)
-    val primaryColor = ColorProvider(R.color.widget_primary)
-    val textColor = ColorProvider(R.color.widget_text)
-    val subtextColor = ColorProvider(R.color.widget_subtext)
-    val greenColor = ColorProvider(R.color.widget_green)
-    val cardColor = ColorProvider(R.color.widget_card)
+    val bgColor = ColorProvider(day = Color(0xFFF9F9F7), night = Color(0xFF161616))
+    val primaryColor = ColorProvider(day = Color(0xFF9E7715), night = Color(0xFFFFD700))
+    val textColor = ColorProvider(day = Color(0xFF1C1C1C), night = Color(0xFFE0E0E0))
+    val subtextColor = ColorProvider(day = Color(0xFF6B6B6B), night = Color(0xFFB0B0B0))
+    val greenColor = ColorProvider(day = Color(0xFF4CAF50), night = Color(0xFF66BB6A))
+    val cardColor = ColorProvider(day = Color(0xFFFFFFFF), night = Color(0xFF1E1E1E))
+    val warningColor = ColorProvider(day = Color(0xFFE65100), night = Color(0xFFFF9800))
 
     Box(
         modifier = GlanceModifier
@@ -204,7 +216,7 @@ fun RentLogWidgetContent(data: WidgetData) {
                         Text(
                             text = "Not logged yet",
                             style = TextStyle(
-                                color = ColorProvider(R.color.widget_orange),
+                                color = warningColor,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold
                             )

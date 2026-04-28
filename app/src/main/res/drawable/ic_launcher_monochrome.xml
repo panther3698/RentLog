@@ -4,46 +4,37 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Receipt/Document body -->
+    <!-- Chimney -->
     <path
         android:fillColor="#000000"
-        android:pathData="M36,24 L72,24 L72,84 L36,84 Z" />
+        android:pathData="M42,20 L42,42 L50,42 L50,20 Z" />
 
-    <!-- Folded corner -->
+    <!-- Roof -->
     <path
         android:fillColor="#000000"
-        android:fillAlpha="0.6"
-        android:pathData="M62,24 L72,24 L72,34 Z" />
+        android:pathData="M54,16 L90,56 L18,56 Z" />
 
-    <!-- Receipt lines -->
+    <!-- House body -->
     <path
-        android:pathData="M42,38 L66,38"
-        android:strokeWidth="2"
-        android:strokeColor="#000000" />
-    <path
-        android:pathData="M42,46 L62,46"
-        android:strokeWidth="1.5"
-        android:strokeColor="#000000"
-        android:strokeAlpha="0.6" />
-    <path
-        android:pathData="M42,53 L66,53"
-        android:strokeWidth="1.5"
-        android:strokeColor="#000000"
-        android:strokeAlpha="0.6" />
+        android:fillColor="#000000"
+        android:pathData="M24,53 L84,53 L84,92 L24,92 Z" />
 
-    <!-- Rupee symbol -->
+    <!-- Door (white to punch through) -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M46,60 L62,60 L62,62 L46,62 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M43,70 L65,70 L65,92 L43,92 Z" />
     <path
-        android:fillColor="#000000"
-        android:pathData="M46,64 L62,64 L62,66 L46,66 Z" />
-    <path
-        android:fillColor="#000000"
-        android:pathData="M48,60 L48,78 L51,78 L56,70 L56,66 L52,72 L51,72 L51,60 Z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M43,70 Q43,62 54,62 Q65,62 65,70 Z" />
 
-    <!-- Checkmark circle -->
+    <!-- Left window -->
     <path
-        android:fillColor="#000000"
-        android:pathData="M64,72 m-8,0 a8,8 0,1 1,16 0 a8,8 0,1 1,-16 0" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M29,60 L41,60 L41,72 L29,72 Z" />
+
+    <!-- Right window -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M67,60 L79,60 L79,72 L67,72 Z" />
+
 </vector>

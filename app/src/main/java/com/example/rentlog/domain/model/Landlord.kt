@@ -1,4 +1,4 @@
-package com.example.rentlog.domain.model
+package com.devchiradhi.rentlog.domain.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

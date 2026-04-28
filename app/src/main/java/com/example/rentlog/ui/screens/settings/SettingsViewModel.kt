@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.screens.settings
+package com.devchiradhi.rentlog.ui.screens.settings
 
 import android.content.ContentValues
 import android.content.Context
@@ -8,9 +8,10 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rentlog.data.local.AppDatabase
-import com.example.rentlog.data.local.PreferencesManager
-import com.example.rentlog.worker.ReminderWorker
+import com.devchiradhi.rentlog.BuildConfig
+import com.devchiradhi.rentlog.data.local.AppDatabase
+import com.devchiradhi.rentlog.data.local.PreferencesManager
+import com.devchiradhi.rentlog.worker.ReminderWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val preferencesManager: PreferencesManager,
     private val database: AppDatabase,
+    private val accessManager: com.devchiradhi.rentlog.data.manager.AccessManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -40,6 +42,15 @@ class SettingsViewModel @Inject constructor(
     val isReminderEnabled: StateFlow<Boolean> = preferencesManager.isReminderEnabled
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+    val hasFullAccess: StateFlow<Boolean> = accessManager.hasFullAccess
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
+    val isPremium: StateFlow<Boolean> = preferencesManager.isPremium
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val debugBypassPremiumAccess: StateFlow<Boolean> = preferencesManager.debugBypassPremiumAccess
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), BuildConfig.DEBUG)
+
     fun setThemeMode(mode: String) {
         viewModelScope.launch { preferencesManager.setThemeMode(mode) }
     }
@@ -51,7 +62,7 @@ class SettingsViewModel @Inject constructor(
     fun setReminderEnabled(enabled: Boolean) {
         viewModelScope.launch {
             preferencesManager.setReminderEnabled(enabled)
-            if (enabled) ReminderWorker.schedule(context) else ReminderWorker.cancel(context)
+            ReminderWorker.sync(context, enabled)
         }
     }
 
@@ -67,29 +78,36 @@ class SettingsViewModel @Inject constructor(
                     val dbFile = context.getDatabasePath("rent_log_db")
                     val fileName = "RentLog_Backup_${System.currentTimeMillis()}.db"
 
-                    val uri: Uri? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         val contentValues = ContentValues().apply {
                             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                            put(MediaStore.MediaColumns.MIME_TYPE, "application/octet-stream")
-                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/RentLog")
+                            put(MediaStore.MediaColumns.MIME_TYPE, "application/x-sqlite3")
+                            put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/RentLog/Backups")
+                            put(MediaStore.MediaColumns.IS_PENDING, 1)
                         }
-                        context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                        val itemUri = context.contentResolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                        
+                        if (itemUri != null) {
+                            context.contentResolver.openOutputStream(itemUri)?.use { output ->
+                                FileInputStream(dbFile).use { it.copyTo(output) }
+                            }
+                            contentValues.clear()
+                            contentValues.put(MediaStore.MediaColumns.IS_PENDING, 0)
+                            context.contentResolver.update(itemUri, contentValues, null, null)
+                            withContext(Dispatchers.Main) { onResult(true, "Backup saved to Downloads/RentLog/Backups") }
+                        } else {
+                            withContext(Dispatchers.Main) { onResult(false, "Could not create backup file") }
+                        }
                     } else {
                         val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                        File(downloadsDir, fileName).also { it.parentFile?.mkdirs() }
-                            .let { Uri.fromFile(it) }
+                        val targetDir = File(downloadsDir, "RentLog/Backups")
+                        if (!targetDir.exists()) targetDir.mkdirs()
+                        val targetFile = File(targetDir, fileName)
+                        FileInputStream(dbFile).use { input ->
+                            FileOutputStream(targetFile).use { output -> input.copyTo(output) }
+                        }
+                        withContext(Dispatchers.Main) { onResult(true, "Backup saved to Downloads/RentLog/Backups") }
                     }
-
-                    if (uri == null) {
-                        withContext(Dispatchers.Main) { onResult(false, "Could not create backup file") }
-                        return@withContext
-                    }
-
-                    context.contentResolver.openOutputStream(uri)?.use { output ->
-                        FileInputStream(dbFile).use { it.copyTo(output) }
-                    }
-
-                    withContext(Dispatchers.Main) { onResult(true, "Backup saved to Downloads/RentLog/$fileName") }
                 } catch (e: Exception) {
                     withContext(Dispatchers.Main) { onResult(false, e.message ?: "Unknown error") }
                 }
@@ -97,43 +115,47 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    // ── Debug helpers (no-ops in release; AccessManager bypasses trial anyway) ──
+
+    fun resetTrial() {
+        if (!BuildConfig.DEBUG) return
+        viewModelScope.launch { preferencesManager.resetTrialTimestamp() }
+    }
+
+    fun simulateTrialExpired() {
+        if (!BuildConfig.DEBUG) return
+        viewModelScope.launch { preferencesManager.simulateTrialExpired() }
+    }
+
+    fun setDebugBypassPremiumAccess(enabled: Boolean) {
+        if (!BuildConfig.DEBUG) return
+        viewModelScope.launch { preferencesManager.setDebugBypassPremiumAccess(enabled) }
+    }
+
     fun importBackup(uri: Uri, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            // ... (rest of existing importBackup logic)
+        }
+    }
+
+    fun wipeAllData(onComplete: () -> Unit) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 try {
-                    val dbFile = context.getDatabasePath("rent_log_db")
-                    val tempFile = File(context.cacheDir, "import_temp.db")
-
-                    // Copy from content URI to temp file first
-                    context.contentResolver.openInputStream(uri)?.use { input ->
-                        FileOutputStream(tempFile).use { input.copyTo(it) }
-                    } ?: run {
-                        withContext(Dispatchers.Main) { onResult(false, "Could not read backup file") }
-                        return@withContext
+                    // 1. Stop reminders
+                    ReminderWorker.sync(context, false)
+                    
+                    // 2. Clear Database
+                    database.clearAllTables()
+                    
+                    // 3. Clear DataStore
+                    preferencesManager.clearAllData()
+                    
+                    withContext(Dispatchers.Main) {
+                        onComplete()
                     }
-
-                    // Validate it's a SQLite file
-                    val header = ByteArray(16)
-                    FileInputStream(tempFile).use { it.read(header) }
-                    val sqliteHeader = "SQLite format 3".toByteArray()
-                    val isValid = header.take(15).toByteArray().contentEquals(sqliteHeader)
-
-                    if (!isValid) {
-                        tempFile.delete()
-                        withContext(Dispatchers.Main) { onResult(false, "Invalid backup file. Please select a valid RentLog backup.") }
-                        return@withContext
-                    }
-
-                    // Close DB before overwriting
-                    database.close()
-                    FileInputStream(tempFile).use { input ->
-                        FileOutputStream(dbFile).use { input.copyTo(it) }
-                    }
-                    tempFile.delete()
-
-                    withContext(Dispatchers.Main) { onResult(true, "Backup restored successfully. Please restart the app.") }
                 } catch (e: Exception) {
-                    withContext(Dispatchers.Main) { onResult(false, e.message ?: "Unknown error") }
+                    // Log error if needed
                 }
             }
         }

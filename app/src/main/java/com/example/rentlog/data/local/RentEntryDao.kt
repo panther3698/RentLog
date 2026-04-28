@@ -1,7 +1,7 @@
-package com.example.rentlog.data.local
+package com.devchiradhi.rentlog.data.local
 
 import androidx.room.*
-import com.example.rentlog.domain.model.RentEntry
+import com.devchiradhi.rentlog.domain.model.RentEntry
 import kotlinx.coroutines.flow.Flow
 
 @Dao

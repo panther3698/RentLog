@@ -1,4 +1,4 @@
-package com.example.rentlog.data.pdf
+package com.devchiradhi.rentlog.data.pdf
 
 object AmountToWords {
     private val units = arrayOf("", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine")

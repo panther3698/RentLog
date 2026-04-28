@@ -1,15 +1,16 @@
-package com.example.rentlog.ui.theme
+package com.devchiradhi.rentlog.ui.theme
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 
 object Spacing {
-    val xs  = 4.dp
-    val sm  = 8.dp
-    val md  = 16.dp
-    val lg  = 24.dp
-    val xl  = 32.dp
-    val xxl = 48.dp
+    val xs   = 4.dp
+    val sm   = 8.dp
+    val sm2  = 12.dp  // between sm and md — replaces "sm + xs" composites
+    val md   = 16.dp
+    val lg   = 24.dp
+    val xl   = 32.dp
+    val xxl  = 48.dp
     val xxxl = 64.dp
 }
 

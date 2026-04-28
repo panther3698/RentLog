@@ -1,8 +1,8 @@
-package com.example.rentlog.ui.screens.welcome
+package com.devchiradhi.rentlog.ui.screens.welcome
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rentlog.data.local.PreferencesManager
+import com.devchiradhi.rentlog.data.local.PreferencesManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject

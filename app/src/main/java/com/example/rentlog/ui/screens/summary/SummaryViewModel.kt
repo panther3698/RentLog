@@ -1,17 +1,16 @@
-package com.example.rentlog.ui.screens.summary
+package com.devchiradhi.rentlog.ui.screens.summary
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rentlog.data.local.PreferencesManager
-import com.example.rentlog.data.pdf.PdfGenerator
-import com.example.rentlog.domain.model.Landlord
-import com.example.rentlog.domain.model.RentEntry
-import com.example.rentlog.domain.repository.LandlordRepository
-import com.example.rentlog.domain.repository.RentEntryRepository
-import com.example.rentlog.ui.util.FiscalYearHelper
+import com.devchiradhi.rentlog.data.pdf.PdfGenerator
+import com.devchiradhi.rentlog.domain.model.Landlord
+import com.devchiradhi.rentlog.domain.model.RentEntry
+import com.devchiradhi.rentlog.domain.repository.LandlordRepository
+import com.devchiradhi.rentlog.domain.repository.RentEntryRepository
+import com.devchiradhi.rentlog.ui.util.FiscalYearHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.DateFormatSymbols
@@ -23,13 +22,17 @@ class SummaryViewModel @Inject constructor(
     private val rentRepository: RentEntryRepository,
     private val landlordRepository: LandlordRepository,
     private val pdfGenerator: PdfGenerator,
-    private val preferencesManager: PreferencesManager
+    private val accessManager: com.devchiradhi.rentlog.data.manager.AccessManager,
+    savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val fiscalStartYear = FiscalYearHelper.getCurrentFiscalYear()
+    private val fiscalStartYear: Int = checkNotNull(savedStateHandle["fiscalYear"])
 
     private val _exportUri = MutableStateFlow<Uri?>(null)
     val exportUri = _exportUri.asStateFlow()
+
+    private val _exportFileName = MutableStateFlow<String?>(null)
+    val exportFileName = _exportFileName.asStateFlow()
 
     private val _shouldShare = MutableStateFlow(false)
     val shouldShare = _shouldShare.asStateFlow()
@@ -40,24 +43,22 @@ class SummaryViewModel @Inject constructor(
     private val _activeLandlord = MutableStateFlow<Landlord?>(null)
     val activeLandlord = _activeLandlord.asStateFlow()
 
+    val hasFullAccess: StateFlow<Boolean> = accessManager.hasFullAccess
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), true)
+
     init {
         observeActiveLandlordAndEntries()
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observeActiveLandlordAndEntries() {
-        combine(
-            preferencesManager.activeLandlordId,
-            landlordRepository.getAllLandlords()
-        ) { activeId, allLandlords ->
-            if (allLandlords.isEmpty()) null
-            else allLandlords.find { it.id == activeId } ?: allLandlords.first()
-        }.onEach { landlord ->
-            _activeLandlord.value = landlord
-            if (landlord != null) {
-                updateEntriesForLandlord(landlord)
-            }
-        }.launchIn(viewModelScope)
+        landlordRepository.getAllLandlords()
+            .map { it.firstOrNull() }
+            .onEach { landlord ->
+                _activeLandlord.value = landlord
+                if (landlord != null) {
+                    updateEntriesForLandlord(landlord)
+                }
+            }.launchIn(viewModelScope)
     }
 
     private fun updateEntriesForLandlord(landlord: Landlord) {
@@ -171,6 +172,7 @@ class SummaryViewModel @Inject constructor(
                 )
 
                 if (uri != null) {
+                    _exportFileName.value = fileName
                     _exportUri.value = uri
                 } else {
                     _uiState.update { it.copy(errorMessage = "Failed to generate PDF. Please check storage permissions.") }

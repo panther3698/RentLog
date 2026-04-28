@@ -1,6 +1,6 @@
-package com.example.rentlog.domain.repository
+package com.devchiradhi.rentlog.domain.repository
 
-import com.example.rentlog.domain.model.RentEntry
+import com.devchiradhi.rentlog.domain.model.RentEntry
 import kotlinx.coroutines.flow.Flow
 
 interface RentEntryRepository {

@@ -1,11 +1,10 @@
-package com.example.rentlog.di
+package com.devchiradhi.rentlog.di
 
 import android.content.Context
 import androidx.room.Room
-import com.example.rentlog.data.local.AppDatabase
-import com.example.rentlog.data.local.LandlordDao
-import com.example.rentlog.data.local.RentEntryDao
-import com.example.rentlog.data.local.RentLogDao
+import com.devchiradhi.rentlog.data.local.AppDatabase
+import com.devchiradhi.rentlog.data.local.LandlordDao
+import com.devchiradhi.rentlog.data.local.RentEntryDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,11 +27,6 @@ object AppModule {
             .addMigrations(AppDatabase.MIGRATION_2_3)
             .fallbackToDestructiveMigration()
             .build()
-    }
-
-    @Provides
-    fun provideRentLogDao(db: AppDatabase): RentLogDao {
-        return db.rentLogDao()
     }
 
     @Provides

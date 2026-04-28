@@ -1,9 +1,9 @@
-package com.example.rentlog.ui.screens.onboarding
+package com.devchiradhi.rentlog.ui.screens.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rentlog.domain.model.Landlord
-import com.example.rentlog.domain.repository.LandlordRepository
+import com.devchiradhi.rentlog.domain.model.Landlord
+import com.devchiradhi.rentlog.domain.repository.LandlordRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

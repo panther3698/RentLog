@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.screens.splash
+package com.devchiradhi.rentlog.ui.screens.splash
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -11,10 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.example.rentlog.R
+import com.devchiradhi.rentlog.R
 
 @Composable
 fun SplashScreen() {
@@ -40,7 +39,7 @@ fun SplashScreen() {
                 .size(200.dp)
                 .scale(scale)
                 .clip(CircleShape)
-                .background(Color(0xFF131B19)), // Exact CalmDarkSurface color for the splash circle
+                .background(MaterialTheme.colorScheme.primary),
             contentAlignment = Alignment.Center
         ) {
             Image(

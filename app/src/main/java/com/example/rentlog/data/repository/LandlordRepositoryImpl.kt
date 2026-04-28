@@ -1,8 +1,8 @@
-package com.example.rentlog.data.repository
+package com.devchiradhi.rentlog.data.repository
 
-import com.example.rentlog.data.local.LandlordDao
-import com.example.rentlog.domain.model.Landlord
-import com.example.rentlog.domain.repository.LandlordRepository
+import com.devchiradhi.rentlog.data.local.LandlordDao
+import com.devchiradhi.rentlog.domain.model.Landlord
+import com.devchiradhi.rentlog.domain.repository.LandlordRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 

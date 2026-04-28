@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.util
+package com.devchiradhi.rentlog.ui.util
 
 import java.text.DateFormatSymbols
 import java.util.*
@@ -17,7 +17,8 @@ object FiscalYearHelper {
     }
 
     fun getFiscalYearLabel(startYear: Int): String {
-        return "FY $startYear - ${startYear + 1}"
+        val endYY = (startYear + 1) % 100
+        return "FY $startYear-${endYY.toString().padStart(2, '0')}"
     }
 
     fun getCalendarYearForMonth(month: Int, fiscalStartYear: Int): Int {

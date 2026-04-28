@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.theme
+package com.devchiradhi.rentlog.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

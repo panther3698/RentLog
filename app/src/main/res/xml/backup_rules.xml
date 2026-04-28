@@ -1,13 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup rules for API 30 and below.
+    The SQLite database contains PAN numbers and financial data — exclude it from backups
+    to prevent sensitive data leaking via Google Drive or device-to-device transfer.
+    DataStore preferences are excluded as well (may contain landlord PAN).
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Exclude the Room database (contains PAN numbers, rent amounts) -->
+    <exclude domain="database" path="rent_log_db" />
+    <exclude domain="database" path="rent_log_db-shm" />
+    <exclude domain="database" path="rent_log_db-wal" />
+
+    <!-- DataStore lives under files/datastore -->
+    <exclude domain="file" path="datastore" />
 </full-backup-content>

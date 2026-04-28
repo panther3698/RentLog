@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Splash screen colors (dark theme) -->
+    <color name="splash_background">#FF080808</color>
+    <color name="splash_icon_background">#FFCC00</color>
+
     <!-- Widget night colors -->
     <color name="widget_bg">#FF161616</color>
     <color name="widget_primary">#FFFFD700</color>

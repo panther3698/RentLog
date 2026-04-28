@@ -8,6 +8,10 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
+    <!-- Splash screen colors (light theme) -->
+    <color name="splash_background">#D4E2DD</color>
+    <color name="splash_icon_background">#2D6A4F</color>
+
     <!-- Widget colors -->
     <color name="widget_bg">#FFF9F9F7</color>
     <color name="widget_primary">#FF9E7715</color>

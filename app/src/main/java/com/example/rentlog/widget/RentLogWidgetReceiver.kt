@@ -1,4 +1,4 @@
-package com.example.rentlog.widget
+package com.devchiradhi.rentlog.widget
 
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver

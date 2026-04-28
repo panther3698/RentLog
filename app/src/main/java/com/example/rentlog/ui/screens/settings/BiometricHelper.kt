@@ -1,4 +1,4 @@
-package com.example.rentlog.ui.screens.settings
+package com.devchiradhi.rentlog.ui.screens.settings
 
 import android.content.Context
 import androidx.biometric.BiometricManager
